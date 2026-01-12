@@ -510,10 +510,11 @@
 
         /* Rainbow sliding animation for Jared */
         @keyframes slideRainbow {
-            from { background-position: 0% 0; }
-            to { background-position: 200% 0; }
+            0% { background-position: 0% 0; }
+            100% { background-position: 200% 0; }
         }
-        .rainbow-bar {
+        
+        .leaderboard .leaderboard-item .leaderboard-bar .leaderboard-bar-fill.rainbow-bar {
             background: repeating-linear-gradient(
                 90deg,
                 #ff0000 0%,
@@ -524,9 +525,12 @@
                 #0000ff 70%,
                 #8b00ff 84%,
                 #ff0000 100%
-            ) !important;
-            background-size: 200% 100% !important;
-            animation: slideRainbow 6s linear infinite !important;
+            );
+            background-size: 200% 100%;
+            animation-name: slideRainbow;
+            animation-duration: 6s;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
         }
 
         /* Loser Image */
