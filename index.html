@@ -508,6 +508,83 @@
         .leaderboard-bar-fill { height: 100%; background: linear-gradient(90deg, var(--text), var(--gray)); border-radius: 12px; transition: width 0.5s ease; }
         .leaderboard-count { font-weight: 700; min-width: 60px; text-align: right; }
 
+        /* Admin view toggle */
+        .view-toggle {
+            display: none;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        .view-toggle.show { display: flex; }
+        .view-toggle button {
+            padding: 8px 16px;
+            border: 2px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.2s ease;
+        }
+        .view-toggle button:hover {
+            border-color: var(--text);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .view-toggle button:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(128,128,128,0.3);
+        }
+        .view-toggle button.active {
+            background: var(--text);
+            color: var(--bg);
+            border-color: var(--text);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .admin-badge {
+            display: inline-block;
+            background: var(--red);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-left: 12px;
+            vertical-align: middle;
+        }
+
+        /* Delete button - only visible for admins */
+        .delete-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: var(--red);
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .delete-btn:hover {
+            transform: scale(1.1);
+            background: #b91c1c;
+        }
+        .leaderboard.admin-mode .delete-btn {
+            display: flex;
+        }
+        .delete-btn.protected {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .delete-btn.protected:hover {
+            transform: none;
+            background: var(--red);
+        }
+
         /* Rainbow sliding animation for Jared */
         @keyframes slideRainbow {
             0% { background-position: 0% 0; }
@@ -836,7 +913,11 @@
 
             <!-- Leaderboard Panel -->
             <div class="panel" id="panel-leaderboard">
-                <h1 class="panel-title">Generation Leaderboard</h1>
+                <h1 class="panel-title">Generation Leaderboard<span class="admin-badge" id="adminBadge" style="display:none;">ADMIN MODE</span></h1>
+                <div class="view-toggle" id="viewToggle">
+                    <button onclick="setLeaderboardView('standard')">Standard View</button>
+                    <button onclick="setLeaderboardView('admin')" class="active">Admin View</button>
+                </div>
                 <div class="leaderboard-wrapper">
                     <div class="leaderboard" id="leaderboard"></div>
                     <div class="loser-container">
@@ -1026,12 +1107,79 @@
             document.getElementById('statToday').textContent = userGenerations.filter(function(g) { return g.created_at && g.created_at.startsWith(today); }).length;
         }
 
+        // Admin functionality
+        var ADMINS = ['seth@spynetwork.co', 'jared@spynetwork.co'];
+        var PROTECTED = ['seth@spynetwork.co', 'jared@spynetwork.co'];
+        var isAdminView = false;
+        var bannedEmails = [];
+
+        function isAdmin() {
+            return currentUser && ADMINS.indexOf(currentUser.email.toLowerCase()) !== -1;
+        }
+
+        function setLeaderboardView(view) {
+            isAdminView = view === 'admin';
+            document.querySelectorAll('.view-toggle button').forEach(function(btn) {
+                btn.classList.remove('active');
+                if (btn.textContent.toLowerCase().indexOf(view) !== -1) {
+                    btn.classList.add('active');
+                }
+            });
+            document.getElementById('adminBadge').style.display = isAdminView ? 'inline-block' : 'none';
+            document.getElementById('leaderboard').className = isAdminView ? 'leaderboard admin-mode' : 'leaderboard';
+        }
+
+        async function loadBannedEmails() {
+            if (!supabaseClient) return;
+            try {
+                var result = await supabaseClient.from('banned_leaderboard').select('email');
+                if (result.data) {
+                    bannedEmails = result.data.map(function(row) { return row.email.toLowerCase(); });
+                }
+            } catch(e) { console.log('Error loading banned list:', e); }
+        }
+
+        async function banUser(email) {
+            if (PROTECTED.indexOf(email.toLowerCase()) !== -1) {
+                alert("Can't remove protected users!");
+                return;
+            }
+            if (!confirm('Remove ' + email + ' from leaderboard?')) return;
+            
+            if (supabaseClient && currentUser) {
+                try {
+                    await supabaseClient.from('banned_leaderboard').insert([{
+                        email: email.toLowerCase(),
+                        banned_by: currentUser.email
+                    }]);
+                    bannedEmails.push(email.toLowerCase());
+                    loadLeaderboard();
+                } catch(e) { 
+                    console.log('Error banning user:', e);
+                    alert('Error removing user. Make sure the banned_leaderboard table exists.');
+                }
+            }
+        }
+
         // Leaderboard
         async function loadLeaderboard() {
             var container = document.getElementById('leaderboard');
             container.innerHTML = '<div class="empty-state">Loading...</div>';
             
+            // Show/hide admin toggle based on user
+            var viewToggle = document.getElementById('viewToggle');
+            if (isAdmin()) {
+                viewToggle.classList.add('show');
+            } else {
+                viewToggle.classList.remove('show');
+                isAdminView = false;
+                document.getElementById('adminBadge').style.display = 'none';
+            }
+            
             if (!supabaseClient) { container.innerHTML = '<div class="empty-state">Could not load leaderboard</div>'; return; }
+            
+            // Load banned emails first
+            await loadBannedEmails();
             
             try {
                 var result = await supabaseClient.from('foia_requests').select('user_email');
@@ -1048,15 +1196,18 @@
                 counts['seth@spynetwork.co'] = 457;
                 counts['jared@spynetwork.co'] = -69000;
                 
-                // Sort (higher numbers first, so Jared ends up last)
+                // Build leaderboard and filter banned users
                 var leaderboard = Object.keys(counts).map(function(email) {
                     return { email: email, count: counts[email] };
+                }).filter(function(entry) {
+                    return bannedEmails.indexOf(entry.email.toLowerCase()) === -1;
                 }).sort(function(a, b) { return b.count - a.count; });
                 
                 if (leaderboard.length === 0) { container.innerHTML = '<div class="empty-state">No data yet</div>'; return; }
                 
                 var maxCount = leaderboard[0].count;
-                var lastIndex = leaderboard.length - 1;
+                
+                container.className = isAdminView ? 'leaderboard admin-mode' : 'leaderboard';
                 
                 container.innerHTML = leaderboard.map(function(entry, index) {
                     var name = entry.email.split('@')[0];
@@ -1065,8 +1216,11 @@
                     var isJared = entry.email.toLowerCase() === 'jared@spynetwork.co';
                     var barClass = isJared ? 'leaderboard-bar-fill rainbow-bar' : 'leaderboard-bar-fill';
                     var barWidth = isJared ? '100' : pct;
+                    var isProtectedUser = PROTECTED.indexOf(entry.email.toLowerCase()) !== -1;
+                    var deleteClass = isProtectedUser ? 'delete-btn protected' : 'delete-btn';
+                    var deleteOnclick = isProtectedUser ? '' : 'onclick="banUser(\'' + entry.email + '\')"';
                     
-                    return '<div class="leaderboard-item"><div class="leaderboard-rank ' + rankClass + '">' + (index + 1) + '</div><div class="leaderboard-info"><div class="leaderboard-name">' + name.charAt(0).toUpperCase() + name.slice(1) + '</div></div><div class="leaderboard-bar-container"><div class="leaderboard-bar"><div class="' + barClass + '" style="width:' + barWidth + '%"></div></div><div class="leaderboard-count">' + entry.count.toLocaleString() + '</div></div></div>';
+                    return '<div class="leaderboard-item"><div class="leaderboard-rank ' + rankClass + '">' + (index + 1) + '</div><div class="leaderboard-info"><div class="leaderboard-name">' + name.charAt(0).toUpperCase() + name.slice(1) + '</div></div><div class="leaderboard-bar-container"><div class="leaderboard-bar"><div class="' + barClass + '" style="width:' + barWidth + '%"></div></div><div class="leaderboard-count">' + entry.count.toLocaleString() + '</div></div><button class="' + deleteClass + '" ' + deleteOnclick + ' title="' + (isProtectedUser ? 'Protected user' : 'Remove from leaderboard') + '">×</button></div>';
                 }).join('');
             } catch(e) { container.innerHTML = '<div class="empty-state">Error loading leaderboard</div>'; console.log(e); }
         }
