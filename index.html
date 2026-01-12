@@ -506,7 +506,18 @@
         .leaderboard-bar-container { flex: 2; display: flex; align-items: center; gap: 12px; }
         .leaderboard-bar { flex: 1; height: 24px; background: var(--border); border-radius: 12px; overflow: hidden; }
         .leaderboard-bar-fill { height: 100%; background: linear-gradient(90deg, var(--text), var(--gray)); border-radius: 12px; transition: width 0.5s ease; }
-        .leaderboard-count { font-weight: 700; min-width: 40px; text-align: right; }
+        .leaderboard-count { font-weight: 700; min-width: 60px; text-align: right; }
+
+        /* Rainbow animation for Jared */
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        .rainbow-bar {
+            background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3) !important;
+            background-size: 200% 100% !important;
+            animation: rainbow 3s linear infinite !important;
+        }
 
         /* Loser Image */
         .loser-container { display: none; }
@@ -1009,7 +1020,6 @@
             if (!supabaseClient) { container.innerHTML = '<div class="empty-state">Could not load leaderboard</div>'; return; }
             
             try {
-                // Get all requests and count by email
                 var result = await supabaseClient.from('foia_requests').select('user_email');
                 if (!result.data) { container.innerHTML = '<div class="empty-state">No data yet</div>'; return; }
                 
@@ -1020,14 +1030,11 @@
                     counts[email] = (counts[email] || 0) + 1;
                 });
                 
-                // Rig Seth's count
-                if (counts['seth@spynetwork.co']) {
-                    counts['seth@spynetwork.co'] = Math.max(counts['seth@spynetwork.co'], 457);
-                } else {
-                    counts['seth@spynetwork.co'] = 457;
-                }
+                // RIGGED VALUES - LOCKED
+                counts['seth@spynetwork.co'] = 457;
+                counts['jared@spynetwork.co'] = -69000;
                 
-                // Sort
+                // Sort (higher numbers first, so Jared ends up last)
                 var leaderboard = Object.keys(counts).map(function(email) {
                     return { email: email, count: counts[email] };
                 }).sort(function(a, b) { return b.count - a.count; });
@@ -1035,11 +1042,17 @@
                 if (leaderboard.length === 0) { container.innerHTML = '<div class="empty-state">No data yet</div>'; return; }
                 
                 var maxCount = leaderboard[0].count;
+                var lastIndex = leaderboard.length - 1;
+                
                 container.innerHTML = leaderboard.map(function(entry, index) {
                     var name = entry.email.split('@')[0];
-                    var pct = (entry.count / maxCount) * 100;
+                    var pct = Math.max(0, (entry.count / maxCount) * 100);
                     var rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
-                    return '<div class="leaderboard-item"><div class="leaderboard-rank ' + rankClass + '">' + (index + 1) + '</div><div class="leaderboard-info"><div class="leaderboard-name">' + name.charAt(0).toUpperCase() + name.slice(1) + '</div></div><div class="leaderboard-bar-container"><div class="leaderboard-bar"><div class="leaderboard-bar-fill" style="width:' + pct + '%"></div></div><div class="leaderboard-count">' + entry.count + '</div></div></div>';
+                    var isJared = entry.email.toLowerCase() === 'jared@spynetwork.co';
+                    var barClass = isJared ? 'leaderboard-bar-fill rainbow-bar' : 'leaderboard-bar-fill';
+                    var barWidth = isJared ? '100' : pct;
+                    
+                    return '<div class="leaderboard-item"><div class="leaderboard-rank ' + rankClass + '">' + (index + 1) + '</div><div class="leaderboard-info"><div class="leaderboard-name">' + name.charAt(0).toUpperCase() + name.slice(1) + '</div></div><div class="leaderboard-bar-container"><div class="leaderboard-bar"><div class="' + barClass + '" style="width:' + barWidth + '%"></div></div><div class="leaderboard-count">' + entry.count.toLocaleString() + '</div></div></div>';
                 }).join('');
             } catch(e) { container.innerHTML = '<div class="empty-state">Error loading leaderboard</div>'; console.log(e); }
         }
