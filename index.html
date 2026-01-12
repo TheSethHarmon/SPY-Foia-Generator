@@ -704,21 +704,21 @@
         const SUPABASE_URL = 'https://qqnnojslnalapstjlrvh.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFxbm5vanNsbmFsYXBzdGpscnZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyNTQzMDMsImV4cCI6MjA4MzgzMDMwM30.3BFjlKRewuk3tr9J11JQQWVy0vK5A3g8ZpmLA5df6Mc';
         
-        let supabase = null;
+        let supabaseClient = null;
         let currentUser = null;
         
         // Initialize Supabase
         try {
             if (window.supabase) {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             }
         } catch(e) { console.log('Supabase init error:', e); }
         
         // Check auth on load
         (async function() {
-            if (!supabase) return;
+            if (!supabaseClient) return;
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session) {
                     currentUser = session.user;
                     showApp();
@@ -734,7 +734,7 @@
             var btn = document.getElementById('loginBtn');
             var msg = document.getElementById('authMessage');
             
-            if (!supabase) {
+            if (!supabaseClient) {
                 msg.textContent = 'Connection error. Please refresh and try again.';
                 msg.className = 'auth-message error';
                 return;
@@ -744,7 +744,7 @@
             btn.textContent = 'Signing in...';
             
             try {
-                var result = await supabase.auth.signInWithPassword({ email: email, password: password });
+                var result = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
                 
                 if (result.error) {
                     msg.textContent = result.error.message;
@@ -771,7 +771,7 @@
             var btn = document.getElementById('signupBtn');
             var msg = document.getElementById('authMessage');
             
-            if (!supabase) {
+            if (!supabaseClient) {
                 msg.textContent = 'Connection error. Please refresh and try again.';
                 msg.className = 'auth-message error';
                 return;
@@ -787,7 +787,7 @@
             btn.textContent = 'Creating account...';
             
             try {
-                var result = await supabase.auth.signUp({ email: email, password: password });
+                var result = await supabaseClient.auth.signUp({ email: email, password: password });
                 
                 if (result.error) {
                     msg.textContent = result.error.message;
@@ -807,8 +807,8 @@
         
         // Logout
         document.getElementById('logoutBtn').addEventListener('click', async function() {
-            if (supabase) {
-                try { await supabase.auth.signOut(); } catch(e) {}
+            if (supabaseClient) {
+                try { await supabaseClient.auth.signOut(); } catch(e) {}
             }
             currentUser = null;
             document.getElementById('appContainer').classList.remove('active');
@@ -827,9 +827,9 @@
         
         // Log request
         async function logRequest(data) {
-            if (!currentUser || !supabase) return;
+            if (!currentUser || !supabaseClient) return;
             try {
-                await supabase.from('foia_requests').insert([{
+                await supabaseClient.from('foia_requests').insert([{
                     user_id: currentUser.id,
                     user_email: currentUser.email,
                     state: data.state,
