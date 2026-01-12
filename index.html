@@ -509,14 +509,18 @@
         .leaderboard-count { font-weight: 700; min-width: 60px; text-align: right; }
 
         /* Rainbow animation for Jared */
-        @keyframes rainbow {
+        @keyframes rainbowSlide {
             0% { background-position: 0% 50%; }
-            100% { background-position: 200% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
         .rainbow-bar {
-            background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3) !important;
-            background-size: 200% 100% !important;
-            animation: rainbow 3s linear infinite !important;
+            background: linear-gradient(270deg, #ff0000, #ff7f00, #ffff00, #00ff00, #00ffff, #0000ff, #8b00ff, #ff0000) !important;
+            background-size: 400% 400% !important;
+            -webkit-animation: rainbowSlide 3s ease infinite !important;
+            -moz-animation: rainbowSlide 3s ease infinite !important;
+            -o-animation: rainbowSlide 3s ease infinite !important;
+            animation: rainbowSlide 3s ease infinite !important;
         }
 
         /* Loser Image */
