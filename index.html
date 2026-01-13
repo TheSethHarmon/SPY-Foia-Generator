@@ -1692,13 +1692,13 @@
                 return;
             }
             
-            // Create mailto link
+            // Create mailto link - use location.href for better compatibility
             var mailtoLink = 'mailto:' + encodeURIComponent(to) + 
                 '?subject=' + encodeURIComponent(subject) + 
                 '&body=' + encodeURIComponent(body);
             
-            // Open in new window
-            window.open(mailtoLink, '_blank');
+            // Use location.href instead of window.open for mailto
+            window.location.href = mailtoLink;
             
             // Show thread ID section
             document.getElementById('threadSection').classList.add('show');
