@@ -97,7 +97,9 @@
         /* Sidebar */
         .sidebar { position: fixed; top: 0; left: -320px; width: 320px; height: 100vh; background: var(--card-bg); box-shadow: 4px 0 24px rgba(0,0,0,0.1); z-index: 999; transition: left 0.3s ease; display: flex; flex-direction: column; }
         .sidebar.active { left: 0; }
-        .sidebar-header { padding: 24px; border-bottom: 2px solid var(--text); font-size: 1.25rem; font-weight: 700; }
+        .sidebar-header { padding: 24px; border-bottom: 2px solid var(--text); font-size: 1.25rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+        .sidebar-close { background: none; border: 1px solid var(--border); color: var(--text); font-size: 1.25rem; cursor: pointer; padding: 4px 10px; border-radius: 6px; line-height: 1; }
+        .sidebar-close:hover { background: var(--border); }
         .sidebar-nav { flex: 1; padding: 16px 0; }
         .nav-item { padding: 16px 24px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 12px; font-weight: 500; color: var(--text); }
         .nav-item:hover { background: var(--border); }
@@ -308,13 +310,18 @@
         .nav-item.admin-only { display: none; }
 
         /* User Management - List View */
-        .user-list { display: flex; flex-direction: column; gap: 12px; max-width: 800px; margin: 0 auto; }
+        .user-list { display: flex; flex-direction: column; gap: 12px; }
         .user-card { background: var(--card-bg); border-radius: 12px; padding: 16px 20px; border: 1px solid var(--border); display: flex; align-items: center; gap: 16px; transition: all 0.2s; }
         .user-card:hover { border-color: var(--text); }
         .user-card.banned-user { opacity: 0.5; border-color: var(--red); }
         .user-info { flex: 1; }
         .user-email { font-weight: 600; font-size: 1rem; }
         .user-stats { color: var(--gray); font-size: 0.85rem; margin-top: 2px; }
+
+        /* Activity Status */
+        .activity-status { padding: 6px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 12px; }
+        .activity-status.active { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid #22c55e; }
+        .activity-status.inactive { background: rgba(156, 163, 175, 0.2); color: #9ca3af; border: 1px solid #9ca3af; }
 
         /* Custom Role Dropdown */
         .role-dropdown { position: relative; min-width: 150px; }
@@ -396,7 +403,7 @@
         <div class="user-menu"><span class="user-email" id="userEmail"></span><button class="logout-btn" id="logoutBtn">Sign Out</button></div>
         <div class="overlay" id="overlay"></div>
         <nav class="sidebar" id="sidebar">
-            <div class="sidebar-header">Menu</div>
+            <div class="sidebar-header"><span>Menu</span><button class="sidebar-close" onclick="document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('active');">&times;</button></div>
             <div class="sidebar-nav">
                 <div class="nav-item active" data-panel="generator"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Generator</div>
                 <div class="nav-item" data-panel="history"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Previous Generations</div>
@@ -404,8 +411,6 @@
                 <div class="nav-item" data-panel="stats"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>My Stats</div>
                 <div class="nav-item" data-panel="leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Leaderboard</div>
                 <div class="nav-item admin-only" data-panel="admin"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Admin Panel</div>
-                <div class="nav-item admin-only" data-panel="admin"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Admin Panel</div>
-                <div class="nav-item" data-panel="admin" id="adminNavItem" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Admin</div>
             </div>
         </nav>
 
@@ -469,12 +474,14 @@
 
             <!-- Admin Panel -->
             <div class="panel" id="panel-admin">
-                <h1 class="panel-title">Admin Panel<span class="admin-badge">ADMIN</span></h1>
-                <h2 style="font-size: 1.1rem; margin-bottom: 16px; color: var(--gray);">User Management</h2>
-                <div class="user-list" id="userList"></div>
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <h1 class="panel-title">Admin Panel<span class="admin-badge">ADMIN</span></h1>
+                    <h2 style="font-size: 1.1rem; margin-bottom: 16px; color: var(--gray);">User Management</h2>
+                    <div class="user-list" id="userList"></div>
+                </div>
             </div>
-
-    <!-- Modal -->
+        </div>
+    </div>
     <div class="modal" id="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title" id="modalTitle">Request Details</h2><button class="modal-close" id="modalClose">&times;</button></div><div class="modal-body" id="modalBody"></div><div class="modal-actions"><button class="modal-btn modal-btn-primary" id="modalCopy">Copy to Clipboard</button><button class="modal-btn modal-btn-secondary" id="modalCloseBtn">Close</button></div></div></div>
 
     <!-- Confirm Modal -->
@@ -556,6 +563,23 @@
             loadUserGenerations(); 
             if (currentUser && currentUser.email.toLowerCase() === 'jared@spynetwork.co') { document.getElementById('jaredCorner').style.display = 'block'; }
             if (isAdmin()) { document.querySelector('.nav-item.admin-only').style.display = 'flex'; }
+            startPresenceHeartbeat();
+        }
+
+        var presenceInterval = null;
+        function startPresenceHeartbeat() {
+            if (!supabaseClient || !currentUser) return;
+            updatePresence();
+            presenceInterval = setInterval(updatePresence, 30000); // Every 30 seconds
+        }
+        async function updatePresence() {
+            if (!supabaseClient || !currentUser) return;
+            try {
+                await supabaseClient.from('user_presence').upsert({ 
+                    email: currentUser.email.toLowerCase(), 
+                    last_seen: new Date().toISOString() 
+                }, { onConflict: 'email' });
+            } catch(e) { console.log('Presence update failed:', e); }
         }
 
         async function checkUserAccess() {
@@ -916,7 +940,7 @@
         });
 
         // Admin Panel
-        var allUsers = [], userRoles = {}, openRoleDropdown = null;
+        var allUsers = [], userRoles = {}, openRoleDropdown = null, activeUsers = [];
 
         async function loadAdminPanel() {
             var container = document.getElementById('userList');
@@ -932,6 +956,15 @@
                 var rolesResult = await supabaseClient.from('user_roles').select('*');
                 if (rolesResult.data) {
                     rolesResult.data.forEach(function(r) { userRoles[r.email.toLowerCase()] = r.role; });
+                }
+                
+                // Get active users from presence table
+                var presenceResult = await supabaseClient.from('user_presence').select('email, last_seen');
+                if (presenceResult.data) {
+                    var now = Date.now();
+                    activeUsers = presenceResult.data.filter(function(p) {
+                        return (now - new Date(p.last_seen).getTime()) < 60000; // Active in last 60 seconds
+                    }).map(function(p) { return p.email.toLowerCase(); });
                 }
                 
                 // Group by email and count generations
@@ -1005,6 +1038,9 @@
                 var isProtected = PROTECTED.indexOf(user.email.toLowerCase()) !== -1;
                 var cardClass = role === 'banned' ? 'user-card banned-user' : 'user-card';
                 var menuId = 'role-menu-' + user.email.replace(/[@.]/g, '-');
+                var isActive = activeUsers.indexOf(user.email.toLowerCase()) !== -1;
+                var activityClass = isActive ? 'activity-status active' : 'activity-status inactive';
+                var activityText = isActive ? 'Active' : 'Inactive';
                 
                 var dropdown = '';
                 if (isProtected) {
@@ -1022,6 +1058,7 @@
                 
                 return '<div class="' + cardClass + '">' +
                     '<div class="user-info"><div class="user-email">' + user.email + '</div><div class="user-stats">' + user.count + ' generations</div></div>' +
+                    '<div class="' + activityClass + '">' + activityText + '</div>' +
                     dropdown +
                 '</div>';
             }).join('');
