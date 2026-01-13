@@ -259,6 +259,26 @@
         /* Responsive */
         @media (max-width: 800px) { .main-grid { grid-template-columns: 1fr; } .user-email { display: none; } .stats-grid { grid-template-columns: 1fr; } .leaderboard-bar-container { display: none; } .sidebar { width: 280px; left: -280px; } }
 
+        /* Search Bar */
+        .search-bar { margin-bottom: 24px; }
+        .search-input { width: 100%; padding: 14px 20px; font-family: inherit; font-size: 1rem; border: 2px solid var(--border); border-radius: 12px; background: var(--card-bg); color: var(--text); transition: all 0.2s; }
+        .search-input:focus { outline: none; border-color: var(--text); box-shadow: 0 0 0 3px rgba(128,128,128,0.2); }
+        .search-input::placeholder { color: var(--gray); }
+
+        /* Suspect Directory */
+        .suspect-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+        .suspect-card { background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; text-align: center; }
+        .suspect-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); border-color: var(--text); }
+        .suspect-name { font-weight: 700; font-size: 1.1rem; }
+        .suspect-count { color: var(--gray); font-size: 0.85rem; margin-top: 4px; }
+
+        /* Suspect Detail Modal */
+        .suspect-detail { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+        .suspect-detail-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .suspect-detail-date { color: var(--gray); font-size: 0.85rem; }
+        .suspect-detail-user { color: var(--gray); font-size: 0.85rem; }
+        .suspect-detail-template { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 0.85rem; line-height: 1.6; max-height: 150px; overflow-y: auto; margin-top: 12px; }
+
         /* Jared Corner Image */
         .jared-corner { display: none; position: fixed; top: 0px; left: 60px; width: 180px; height: 180px; z-index: 100; transition: transform 0.5s ease; cursor: pointer; }
         .jared-corner:hover { transform: rotate(360deg) scale(1.1); }
@@ -310,6 +330,7 @@
             <div class="sidebar-nav">
                 <div class="nav-item active" data-panel="generator"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Generator</div>
                 <div class="nav-item" data-panel="history"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Previous Generations</div>
+                <div class="nav-item" data-panel="directory"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Suspect Directory</div>
                 <div class="nav-item" data-panel="stats"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>My Stats</div>
                 <div class="nav-item" data-panel="leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Leaderboard</div>
             </div>
@@ -345,7 +366,18 @@
             </div>
 
             <!-- History Panel -->
-            <div class="panel" id="panel-history"><h1 class="panel-title">Previous Generations</h1><div class="gen-list" id="genList"></div></div>
+            <div class="panel" id="panel-history">
+                <h1 class="panel-title">Previous Generations</h1>
+                <div class="search-bar"><input type="text" class="search-input" id="historySearch" placeholder="Search by suspect, state, or subject..."></div>
+                <div class="gen-list" id="genList"></div>
+            </div>
+
+            <!-- Suspect Directory Panel -->
+            <div class="panel" id="panel-directory">
+                <h1 class="panel-title">Suspect Directory</h1>
+                <div class="search-bar"><input type="text" class="search-input" id="directorySearch" placeholder="Search suspects..."></div>
+                <div class="suspect-grid" id="suspectGrid"></div>
+            </div>
 
             <!-- Stats Panel -->
             <div class="panel" id="panel-stats">
@@ -363,7 +395,7 @@
     </div>
 
     <!-- Modal -->
-    <div class="modal" id="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title">Request Details</h2><button class="modal-close" id="modalClose">&times;</button></div><div class="modal-body" id="modalBody"></div><div class="modal-actions"><button class="modal-btn modal-btn-primary" id="modalCopy">Copy to Clipboard</button><button class="modal-btn modal-btn-secondary" id="modalCloseBtn">Close</button></div></div></div>
+    <div class="modal" id="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title" id="modalTitle">Request Details</h2><button class="modal-close" id="modalClose">&times;</button></div><div class="modal-body" id="modalBody"></div><div class="modal-actions"><button class="modal-btn modal-btn-primary" id="modalCopy">Copy to Clipboard</button><button class="modal-btn modal-btn-secondary" id="modalCloseBtn">Close</button></div></div></div>
 
     <!-- Confirm Modal -->
     <div class="confirm-modal" id="confirmModal"><div class="confirm-content"><div class="confirm-icon">!</div><h3 class="confirm-title">Duplicate Suspect</h3><p class="confirm-message">This suspect has already been requested before. Are you sure you want to continue?</p><div class="confirm-buttons"><button class="confirm-btn confirm-btn-no" id="confirmNo">No</button><button class="confirm-btn confirm-btn-yes" id="confirmYes">Yes</button></div></div></div>
@@ -430,6 +462,7 @@
                 document.getElementById('panel-' + panelId).classList.add('active');
                 toggleMenu();
                 if (panelId === 'history') loadHistory();
+                if (panelId === 'directory') loadDirectory();
                 if (panelId === 'stats') loadStats();
                 if (panelId === 'leaderboard') loadLeaderboard();
             });
@@ -460,15 +493,33 @@
         }
 
         // History
-        function loadHistory() {
+        function loadHistory(searchTerm) {
             var container = document.getElementById('genList');
-            if (userGenerations.length === 0) { container.innerHTML = '<div class="empty-state"><p>No generations yet. Create your first FOIA request!</p></div>'; return; }
-            container.innerHTML = userGenerations.map(function(gen, idx) {
+            var filtered = userGenerations;
+            if (searchTerm) {
+                var term = searchTerm.toLowerCase();
+                filtered = userGenerations.filter(function(gen) {
+                    return (gen.suspect_names && gen.suspect_names.toLowerCase().includes(term)) ||
+                           (gen.state && gen.state.toLowerCase().includes(term)) ||
+                           (gen.subject_matter && gen.subject_matter.toLowerCase().includes(term)) ||
+                           (gen.location && gen.location.toLowerCase().includes(term));
+                });
+            }
+            if (filtered.length === 0) { 
+                container.innerHTML = '<div class="empty-state"><p>' + (searchTerm ? 'No results found.' : 'No generations yet. Create your first FOIA request!') + '</p></div>'; 
+                return; 
+            }
+            container.innerHTML = filtered.map(function(gen, idx) {
+                var realIdx = userGenerations.indexOf(gen);
                 var date = new Date(gen.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 var template = generateTemplateHTML(gen);
-                return '<div class="gen-item"><div class="gen-item-header"><span class="gen-item-title">' + gen.state + ' - ' + gen.suspect_names + '</span><span class="gen-item-date">' + date + '</span></div><div class="gen-item-details">' + gen.subject_matter + ' • ' + gen.location + '</div><div class="gen-item-template" id="template-' + idx + '">' + template.replace(/\n/g, '<br>') + '</div><div class="gen-item-actions"><button class="gen-copy-btn" onclick="copyTemplate(' + idx + ')">Copy Template</button></div></div>';
+                return '<div class="gen-item"><div class="gen-item-header"><span class="gen-item-title">' + gen.state + ' - ' + gen.suspect_names + '</span><span class="gen-item-date">' + date + '</span></div><div class="gen-item-details">' + gen.subject_matter + ' • ' + gen.location + '</div><div class="gen-item-template" id="template-' + realIdx + '">' + template.replace(/\n/g, '<br>') + '</div><div class="gen-item-actions"><button class="gen-copy-btn" onclick="copyTemplate(' + realIdx + ')">Copy Template</button></div></div>';
             }).join('');
         }
+
+        document.getElementById('historySearch').addEventListener('input', function() {
+            loadHistory(this.value);
+        });
 
         function copyTemplate(idx) {
             var gen = userGenerations[idx];
@@ -477,6 +528,65 @@
                 document.getElementById('copySuccess').classList.add('show');
                 setTimeout(function() { document.getElementById('copySuccess').classList.remove('show'); }, 2000);
             });
+        }
+
+        // Suspect Directory
+        var allSuspects = [];
+
+        async function loadDirectory(searchTerm) {
+            var container = document.getElementById('suspectGrid');
+            container.innerHTML = '<div class="empty-state">Loading...</div>';
+            
+            if (!supabaseClient) { container.innerHTML = '<div class="empty-state">Could not load directory</div>'; return; }
+            
+            try {
+                var result = await supabaseClient.from('foia_requests').select('*').order('created_at', { ascending: false });
+                if (!result.data || result.data.length === 0) { container.innerHTML = '<div class="empty-state">No suspects yet</div>'; return; }
+                
+                allSuspects = result.data;
+                
+                // Group by suspect name
+                var suspectMap = {};
+                result.data.forEach(function(gen) {
+                    var name = gen.suspect_names || 'Unknown';
+                    if (!suspectMap[name]) suspectMap[name] = [];
+                    suspectMap[name].push(gen);
+                });
+                
+                var suspects = Object.keys(suspectMap).map(function(name) {
+                    return { name: name, count: suspectMap[name].length, generations: suspectMap[name] };
+                }).sort(function(a, b) { return b.count - a.count; });
+                
+                // Filter by search term
+                if (searchTerm) {
+                    var term = searchTerm.toLowerCase();
+                    suspects = suspects.filter(function(s) { return s.name.toLowerCase().includes(term); });
+                }
+                
+                if (suspects.length === 0) { container.innerHTML = '<div class="empty-state">No suspects found</div>'; return; }
+                
+                container.innerHTML = suspects.map(function(suspect, idx) {
+                    return '<div class="suspect-card" onclick="showSuspectDetail(\'' + suspect.name.replace(/'/g, "\\'") + '\')"><div class="suspect-name">' + suspect.name + '</div><div class="suspect-count">' + suspect.count + ' generation' + (suspect.count > 1 ? 's' : '') + '</div></div>';
+                }).join('');
+            } catch(e) { container.innerHTML = '<div class="empty-state">Error loading directory</div>'; console.log(e); }
+        }
+
+        document.getElementById('directorySearch').addEventListener('input', function() {
+            loadDirectory(this.value);
+        });
+
+        function showSuspectDetail(suspectName) {
+            var generations = allSuspects.filter(function(gen) { return gen.suspect_names === suspectName; });
+            var content = generations.map(function(gen) {
+                var date = new Date(gen.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                var user = gen.user_email ? gen.user_email.split('@')[0] : 'Unknown';
+                var template = generateTemplateHTML(gen);
+                return '<div class="suspect-detail"><div class="suspect-detail-header"><span class="suspect-detail-date">' + date + '</span><span class="suspect-detail-user">by ' + user + '</span></div><div class="suspect-detail-template">' + template.replace(/\n/g, '<br>') + '</div></div>';
+            }).join('');
+            
+            document.getElementById('modalTitle').textContent = suspectName;
+            document.getElementById('modalBody').innerHTML = content;
+            document.getElementById('modal').classList.add('active');
         }
 
         // Stats
