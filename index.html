@@ -66,6 +66,11 @@
         .auth-message.error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; display: block; }
         .auth-message.success { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; display: block; }
         .auth-footer { text-align: center; margin-top: 24px; color: var(--gray); font-size: 0.85rem; }
+        .forgot-password-link { display: block; text-align: center; margin-top: 16px; color: var(--gray); font-size: 0.9rem; cursor: pointer; transition: color 0.2s; background: none; border: none; font-family: inherit; width: 100%; }
+        .forgot-password-link:hover { color: var(--text); text-decoration: underline; }
+        .back-to-login { display: inline-flex; align-items: center; gap: 6px; color: var(--gray); font-size: 0.9rem; cursor: pointer; margin-bottom: 20px; transition: color 0.2s; background: none; border: none; font-family: inherit; padding: 0; }
+        .back-to-login:hover { color: var(--text); }
+        .back-to-login svg { width: 16px; height: 16px; }
 
         /* App Container */
         .app-container { display: none; }
@@ -388,8 +393,9 @@
         .user-detail-gen-meta { font-size: 0.8rem; color: var(--gray); }
     </style>
     <script>
-        function showLogin() { document.getElementById('loginTab').classList.add('active'); document.getElementById('signupTab').classList.remove('active'); document.getElementById('loginForm').classList.add('active'); document.getElementById('signupForm').classList.remove('active'); document.getElementById('authMessage').className = 'auth-message'; }
-        function showSignup() { document.getElementById('signupTab').classList.add('active'); document.getElementById('loginTab').classList.remove('active'); document.getElementById('signupForm').classList.add('active'); document.getElementById('loginForm').classList.remove('active'); document.getElementById('authMessage').className = 'auth-message'; }
+        function showLogin() { document.getElementById('loginTab').classList.add('active'); document.getElementById('signupTab').classList.remove('active'); document.getElementById('loginForm').classList.add('active'); document.getElementById('signupForm').classList.remove('active'); document.getElementById('forgotPasswordForm').classList.remove('active'); document.getElementById('authMessage').className = 'auth-message'; document.querySelector('.auth-tabs').style.display = 'flex'; }
+        function showSignup() { document.getElementById('signupTab').classList.add('active'); document.getElementById('loginTab').classList.remove('active'); document.getElementById('signupForm').classList.add('active'); document.getElementById('loginForm').classList.remove('active'); document.getElementById('forgotPasswordForm').classList.remove('active'); document.getElementById('authMessage').className = 'auth-message'; document.querySelector('.auth-tabs').style.display = 'flex'; }
+        function showForgotPassword() { document.getElementById('loginForm').classList.remove('active'); document.getElementById('signupForm').classList.remove('active'); document.getElementById('forgotPasswordForm').classList.add('active'); document.getElementById('loginTab').classList.remove('active'); document.getElementById('signupTab').classList.remove('active'); document.getElementById('authMessage').className = 'auth-message'; document.querySelector('.auth-tabs').style.display = 'none'; }
     </script>
 </head>
 <body>
@@ -407,6 +413,15 @@
                 <div class="form-group"><label for="loginEmail">Email</label><input type="email" id="loginEmail" placeholder="you@example.com" required></div>
                 <div class="form-group"><label for="loginPassword">Password</label><input type="password" id="loginPassword" placeholder="••••••••" required></div>
                 <button type="submit" class="btn" id="loginBtn">Sign In</button>
+                <button type="button" class="forgot-password-link" onclick="showForgotPassword()">Forgot Password?</button>
+            </form>
+            <form id="forgotPasswordForm" class="auth-form">
+                <button type="button" class="back-to-login" onclick="showLogin()">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    Back to Sign In
+                </button>
+                <div class="form-group"><label for="forgotEmail">Email Address</label><input type="email" id="forgotEmail" placeholder="you@example.com" required></div>
+                <button type="submit" class="btn" id="forgotBtn">Send Reset Link</button>
             </form>
             <form id="signupForm" class="auth-form">
                 <div class="form-group"><label for="signupEmail">Email</label><input type="email" id="signupEmail" placeholder="you@example.com" required></div>
@@ -591,6 +606,31 @@
             btn.disabled = false; btn.textContent = 'Create Account';
         });
 
+        document.getElementById('forgotPasswordForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            var email = document.getElementById('forgotEmail').value;
+            var btn = document.getElementById('forgotBtn'), msg = document.getElementById('authMessage');
+            if (!supabaseClient) { msg.textContent = 'Connection error.'; msg.className = 'auth-message error'; return; }
+            btn.disabled = true; btn.textContent = 'Sending...';
+            try { 
+                var result = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + window.location.pathname
+                }); 
+                if (result.error) { 
+                    msg.textContent = result.error.message; 
+                    msg.className = 'auth-message error'; 
+                } else { 
+                    msg.textContent = 'Check your email for a password reset link!'; 
+                    msg.className = 'auth-message success'; 
+                    document.getElementById('forgotEmail').value = '';
+                } 
+            } catch (err) { 
+                msg.textContent = 'Connection error.'; 
+                msg.className = 'auth-message error'; 
+            }
+            btn.disabled = false; btn.textContent = 'Send Reset Link';
+        });
+
         document.getElementById('logoutBtn').addEventListener('click', async function() { if (supabaseClient) try { await supabaseClient.auth.signOut(); } catch(e) {} currentUser = null; document.getElementById('appContainer').classList.remove('active'); document.getElementById('authContainer').style.display = 'flex'; });
 
         function showApp() { 
@@ -604,18 +644,122 @@
         }
 
         var presenceInterval = null;
+        var sessionStartTime = Date.now();
+        var totalActiveTime = 0;
+        var lastActivityTime = Date.now();
+        var isPageVisible = true;
+        var userLocationData = null;
+
         function startPresenceHeartbeat() {
             if (!supabaseClient || !currentUser) return;
+            
+            // Get location data
+            fetchLocationData();
+            
+            // Track page visibility
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    isPageVisible = false;
+                    totalActiveTime += Date.now() - lastActivityTime;
+                } else {
+                    isPageVisible = true;
+                    lastActivityTime = Date.now();
+                }
+                updatePresence();
+            });
+            
+            // Track user activity
+            ['mousedown', 'keydown', 'scroll', 'touchstart'].forEach(function(evt) {
+                document.addEventListener(evt, function() {
+                    lastActivityTime = Date.now();
+                }, { passive: true });
+            });
+            
+            // Initial update
             updatePresence();
-            presenceInterval = setInterval(updatePresence, 30000); // Every 30 seconds
+            
+            // Heartbeat every 30 seconds
+            presenceInterval = setInterval(updatePresence, 30000);
+            
+            // Update on page unload
+            window.addEventListener('beforeunload', function() {
+                if (isPageVisible) {
+                    totalActiveTime += Date.now() - lastActivityTime;
+                }
+                updatePresence(true);
+            });
         }
-        async function updatePresence() {
-            if (!supabaseClient || !currentUser) return;
+
+        async function fetchLocationData() {
             try {
-                await supabaseClient.from('user_presence').upsert({ 
-                    email: currentUser.email.toLowerCase(), 
-                    last_seen: new Date().toISOString() 
-                }, { onConflict: 'email' });
+                var response = await fetch('https://ipapi.co/json/');
+                if (response.ok) {
+                    userLocationData = await response.json();
+                }
+            } catch(e) { 
+                console.log('Could not fetch location data'); 
+                // Try backup service
+                try {
+                    var response2 = await fetch('https://ip-api.com/json/');
+                    if (response2.ok) {
+                        var data = await response2.json();
+                        userLocationData = {
+                            ip: data.query,
+                            city: data.city,
+                            region: data.regionName,
+                            country_name: data.country,
+                            latitude: data.lat,
+                            longitude: data.lon,
+                            org: data.isp,
+                            timezone: data.timezone
+                        };
+                    }
+                } catch(e2) { console.log('Backup location service also failed'); }
+            }
+        }
+
+        async function updatePresence(isUnload) {
+            if (!supabaseClient || !currentUser) return;
+            
+            var currentActiveTime = totalActiveTime;
+            if (isPageVisible) {
+                currentActiveTime += Date.now() - lastActivityTime;
+            }
+            
+            var sessionDuration = Math.floor((Date.now() - sessionStartTime) / 1000); // in seconds
+            var activeSeconds = Math.floor(currentActiveTime / 1000);
+            
+            var presenceData = { 
+                email: currentUser.email.toLowerCase(), 
+                last_seen: new Date().toISOString(),
+                user_id: currentUser.id,
+                session_started: new Date(sessionStartTime).toISOString(),
+                session_duration_seconds: sessionDuration,
+                active_seconds: activeSeconds,
+                user_agent: navigator.userAgent,
+                screen_width: window.screen.width,
+                screen_height: window.screen.height,
+                viewport_width: window.innerWidth,
+                viewport_height: window.innerHeight,
+                language: navigator.language,
+                platform: navigator.platform,
+                is_online: !document.hidden
+            };
+            
+            // Add location data if available
+            if (userLocationData) {
+                presenceData.ip_address = userLocationData.ip;
+                presenceData.city = userLocationData.city;
+                presenceData.region = userLocationData.region;
+                presenceData.country = userLocationData.country_name;
+                presenceData.latitude = userLocationData.latitude;
+                presenceData.longitude = userLocationData.longitude;
+                presenceData.isp = userLocationData.org;
+                presenceData.timezone = userLocationData.timezone;
+            }
+            
+            try {
+                await supabaseClient.from('user_presence').upsert(presenceData, { onConflict: 'email' });
             } catch(e) { console.log('Presence update failed:', e); }
         }
 
@@ -1160,13 +1304,12 @@
                     if (genResult.data) generations = genResult.data;
                 }
                 
-                // Get presence data
-                var lastSeen = null;
-                var totalSessions = 0;
+                // Get presence data with all tracking info
+                var presence = null;
                 try {
                     var presenceResult = await supabaseClient.from('user_presence').select('*').eq('email', email.toLowerCase()).single();
                     if (presenceResult.data) {
-                        lastSeen = presenceResult.data.last_seen;
+                        presence = presenceResult.data;
                     }
                 } catch(e) {}
                 
@@ -1185,6 +1328,17 @@
                 var gensWeek = generations.filter(function(g) { return g.created_at >= weekAgo; }).length;
                 var gensMonth = generations.filter(function(g) { return g.created_at >= monthAgo; }).length;
                 
+                // Format time duration
+                function formatDuration(seconds) {
+                    if (!seconds) return 'N/A';
+                    var hrs = Math.floor(seconds / 3600);
+                    var mins = Math.floor((seconds % 3600) / 60);
+                    var secs = seconds % 60;
+                    if (hrs > 0) return hrs + 'h ' + mins + 'm ' + secs + 's';
+                    if (mins > 0) return mins + 'm ' + secs + 's';
+                    return secs + 's';
+                }
+                
                 // Build HTML
                 var html = '';
                 
@@ -1194,15 +1348,49 @@
                 html += '<div class="user-detail-grid">';
                 html += '<div class="user-detail-item"><div class="user-detail-label">Email</div><div class="user-detail-value">' + email + '</div></div>';
                 html += '<div class="user-detail-item"><div class="user-detail-label">Role</div><div class="user-detail-value">' + getRoleLabel(role).toUpperCase() + '</div></div>';
-                html += '<div class="user-detail-item"><div class="user-detail-label">Status</div><div class="user-detail-value">' + (isActive ? '🟢 Active' : '⚫ Inactive') + '</div></div>';
-                html += '<div class="user-detail-item"><div class="user-detail-label">User ID</div><div class="user-detail-value small">' + (userData.id || 'N/A') + '</div></div>';
-                html += '<div class="user-detail-item"><div class="user-detail-label">Last Seen</div><div class="user-detail-value">' + (lastSeen ? new Date(lastSeen).toLocaleString() : 'Never') + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Status</div><div class="user-detail-value">' + (isActive ? '🟢 Active Now' : '⚫ Offline') + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">User ID</div><div class="user-detail-value small">' + (userData.id || presence?.user_id || 'N/A') + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Last Seen</div><div class="user-detail-value">' + (presence?.last_seen ? new Date(presence.last_seen).toLocaleString() : 'Never') + '</div></div>';
                 html += '<div class="user-detail-item"><div class="user-detail-label">First Activity</div><div class="user-detail-value">' + (firstGen ? new Date(firstGen.created_at).toLocaleDateString() : 'N/A') + '</div></div>';
+                html += '</div></div>';
+                
+                // Location & Network Section
+                html += '<div class="user-detail-section">';
+                html += '<div class="user-detail-section-title">Location & Network</div>';
+                html += '<div class="user-detail-grid">';
+                html += '<div class="user-detail-item"><div class="user-detail-label">IP Address</div><div class="user-detail-value">' + (presence?.ip_address || 'N/A') + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">City</div><div class="user-detail-value">' + (presence?.city || 'N/A') + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Region</div><div class="user-detail-value">' + (presence?.region || 'N/A') + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Country</div><div class="user-detail-value">' + (presence?.country || 'N/A') + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Coordinates</div><div class="user-detail-value">' + (presence?.latitude && presence?.longitude ? presence.latitude.toFixed(4) + ', ' + presence.longitude.toFixed(4) : 'N/A') + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Timezone</div><div class="user-detail-value">' + (presence?.timezone || 'N/A') + '</div></div>';
+                html += '<div class="user-detail-item full-width"><div class="user-detail-label">ISP / Organization</div><div class="user-detail-value">' + (presence?.isp || 'N/A') + '</div></div>';
+                html += '</div></div>';
+                
+                // Session Info Section
+                html += '<div class="user-detail-section">';
+                html += '<div class="user-detail-section-title">Current Session</div>';
+                html += '<div class="user-detail-grid">';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Session Started</div><div class="user-detail-value">' + (presence?.session_started ? new Date(presence.session_started).toLocaleString() : 'N/A') + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Session Duration</div><div class="user-detail-value">' + formatDuration(presence?.session_duration_seconds) + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Active Time</div><div class="user-detail-value">' + formatDuration(presence?.active_seconds) + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Currently Viewing</div><div class="user-detail-value">' + (presence?.is_online ? '✅ Yes' : '❌ No') + '</div></div>';
+                html += '</div></div>';
+                
+                // Device Info Section
+                html += '<div class="user-detail-section">';
+                html += '<div class="user-detail-section-title">Device Information</div>';
+                html += '<div class="user-detail-grid">';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Platform</div><div class="user-detail-value">' + (presence?.platform || 'N/A') + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Language</div><div class="user-detail-value">' + (presence?.language || 'N/A') + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Screen Size</div><div class="user-detail-value">' + (presence?.screen_width && presence?.screen_height ? presence.screen_width + ' × ' + presence.screen_height : 'N/A') + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Viewport Size</div><div class="user-detail-value">' + (presence?.viewport_width && presence?.viewport_height ? presence.viewport_width + ' × ' + presence.viewport_height : 'N/A') + '</div></div>';
+                html += '<div class="user-detail-item full-width"><div class="user-detail-label">User Agent</div><div class="user-detail-value small">' + (presence?.user_agent || 'N/A') + '</div></div>';
                 html += '</div></div>';
                 
                 // Activity Stats Section
                 html += '<div class="user-detail-section">';
-                html += '<div class="user-detail-section-title">Activity Statistics</div>';
+                html += '<div class="user-detail-section-title">Generation Statistics</div>';
                 html += '<div class="user-detail-grid">';
                 html += '<div class="user-detail-item"><div class="user-detail-label">Total Generations</div><div class="user-detail-value">' + generations.length + '</div></div>';
                 html += '<div class="user-detail-item"><div class="user-detail-label">Today</div><div class="user-detail-value">' + gensToday + '</div></div>';
@@ -1226,13 +1414,6 @@
                     });
                     html += '</div></div>';
                 }
-                
-                // Raw Data Section (for debugging/advanced info)
-                html += '<div class="user-detail-section">';
-                html += '<div class="user-detail-section-title">Technical Data</div>';
-                html += '<div class="user-detail-grid">';
-                html += '<div class="user-detail-item full-width"><div class="user-detail-label">Browser/Device Info</div><div class="user-detail-value small">' + navigator.userAgent + '</div></div>';
-                html += '</div></div>';
                 
                 body.innerHTML = html;
                 
