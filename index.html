@@ -1706,40 +1706,49 @@
             
             // Copy formatted HTML to clipboard first
             var html = '<div style="background-color:white;color:black;font-family:Arial,sans-serif;">' + outputEl.innerHTML + '</div>';
+            var copySuccess = false;
+            
             try {
                 await navigator.clipboard.write([new ClipboardItem({
                     'text/html': new Blob([html], {type:'text/html'}),
                     'text/plain': new Blob([outputEl.innerText], {type:'text/plain'})
                 })]);
+                copySuccess = true;
             } catch(e) {
                 // Fallback copy
-                var t = document.createElement('div'); 
-                t.innerHTML = html; 
-                t.style.cssText = 'position:absolute;left:-9999px';
-                document.body.appendChild(t); 
-                var r = document.createRange(); 
-                r.selectNodeContents(t);
-                var s = window.getSelection(); 
-                s.removeAllRanges(); 
-                s.addRange(r); 
-                document.execCommand('copy'); 
-                s.removeAllRanges(); 
-                document.body.removeChild(t);
+                try {
+                    var t = document.createElement('div'); 
+                    t.innerHTML = html; 
+                    t.style.cssText = 'position:absolute;left:-9999px';
+                    document.body.appendChild(t); 
+                    var r = document.createRange(); 
+                    r.selectNodeContents(t);
+                    var s = window.getSelection(); 
+                    s.removeAllRanges(); 
+                    s.addRange(r); 
+                    document.execCommand('copy'); 
+                    s.removeAllRanges(); 
+                    document.body.removeChild(t);
+                    copySuccess = true;
+                } catch(e2) {
+                    console.log('Copy failed:', e2);
+                }
             }
             
-            // Open Gmail compose (plain text body as fallback, user will paste formatted)
+            // Show thread ID section
+            document.getElementById('threadSection').classList.add('show');
+            
+            // Open Gmail compose
             var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1' +
                 '&to=' + encodeURIComponent(to) +
                 '&su=' + encodeURIComponent(subject);
             
-            // Open Gmail compose in new tab
+            // Show message and open Gmail
+            if (copySuccess) {
+                alert('Formatted request copied to clipboard!\n\nGmail is opening - just press Ctrl+V (or Cmd+V) to paste your formatted request.');
+            }
+            
             window.open(gmailUrl, '_blank');
-            
-            // Show success message
-            alert('Formatted request copied to clipboard!\\n\\nGmail is opening - just press Ctrl+V (or Cmd+V) to paste your formatted request.');
-            
-            // Show thread ID section
-            document.getElementById('threadSection').classList.add('show');
         });
         
         document.getElementById('saveThreadBtn').addEventListener('click', async function() {
