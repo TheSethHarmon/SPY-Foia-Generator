@@ -165,17 +165,19 @@
         .stat-number { font-size: 2.5rem; font-weight: 700; }
         .stat-label { font-size: 0.9rem; color: var(--gray); margin-top: 4px; }
 
-        /* Generation List */
-        .gen-list { display: flex; flex-direction: column; gap: 16px; }
-        .gen-item { background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid var(--border); }
-        .gen-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .gen-item-title { font-weight: 700; font-size: 1.1rem; }
+        /* Generation List - Grid Layout */
+        .gen-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+        .gen-item { background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; position: relative; }
+        .gen-item:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); border-color: var(--text); }
+        .gen-item-title { font-weight: 700; font-size: 1.1rem; margin-bottom: 4px; }
         .gen-item-date { color: var(--gray); font-size: 0.85rem; }
-        .gen-item-details { color: var(--gray); margin-bottom: 16px; font-size: 0.9rem; }
-        .gen-item-template { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-size: 0.85rem; line-height: 1.6; max-height: 200px; overflow-y: auto; margin-bottom: 12px; }
-        .gen-item-actions { display: flex; gap: 8px; }
-        .gen-copy-btn { padding: 8px 16px; font-size: 0.8rem; font-weight: 700; background: var(--text); color: var(--bg); border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
-        .gen-copy-btn:hover { opacity: 0.8; }
+        .gen-item-details { color: var(--gray); margin-top: 8px; font-size: 0.9rem; }
+
+        /* Card Delete Button */
+        .card-delete { position: absolute; top: 10px; right: 10px; width: 24px; height: 24px; border-radius: 50%; background: var(--red); color: white; border: none; cursor: pointer; font-size: 14px; display: none; align-items: center; justify-content: center; transition: all 0.2s; line-height: 1; }
+        .card-delete:hover { transform: scale(1.1); background: #b91c1c; }
+        .gen-item:hover .card-delete, .suspect-card:hover .card-delete { display: flex; }
+        .card-delete.hidden { display: none !important; }
 
         /* Leaderboard */
         .leaderboard-wrapper { position: relative; }
@@ -267,7 +269,7 @@
 
         /* Suspect Directory */
         .suspect-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
-        .suspect-card { background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; text-align: center; }
+        .suspect-card { background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; text-align: center; position: relative; }
         .suspect-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); border-color: var(--text); }
         .suspect-name { font-weight: 700; font-size: 1.1rem; }
         .suspect-count { color: var(--gray); font-size: 0.85rem; margin-top: 4px; }
@@ -279,10 +281,112 @@
         .suspect-detail-user { color: var(--gray); font-size: 0.85rem; }
         .suspect-detail-template { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 0.85rem; line-height: 1.6; max-height: 150px; overflow-y: auto; margin-top: 12px; }
 
+        /* Admin Panel */
+        .admin-panel { max-width: 800px; }
+        .user-table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .user-table th, .user-table td { padding: 16px 20px; text-align: left; border-bottom: 1px solid var(--border); }
+        .user-table th { background: var(--border); font-weight: 700; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .user-table tr:last-child td { border-bottom: none; }
+        .user-table tr:hover td { background: var(--border); }
+        .user-email-cell { font-weight: 500; }
+        .role-select { padding: 8px 12px; border: 2px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text); font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
+        .role-select:hover { border-color: var(--text); }
+        .role-select:focus { outline: none; border-color: var(--text); box-shadow: 0 0 0 3px rgba(128,128,128,0.2); }
+        .role-select:disabled { opacity: 0.5; cursor: not-allowed; }
+        .role-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+        .role-badge.admin { background: var(--red); color: white; }
+        .role-badge.requester { background: var(--text); color: var(--bg); }
+        .role-badge.view-only { background: var(--border); color: var(--gray); }
+        .super-admin-badge { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; margin-left: 8px; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; }
+
         /* Jared Corner Image */
         .jared-corner { display: none; position: fixed; top: 0px; left: 60px; width: 180px; height: 180px; z-index: 100; transition: transform 0.5s ease; cursor: pointer; }
         .jared-corner:hover { transform: rotate(360deg) scale(1.1); }
         .jared-corner img { width: 100%; height: 100%; object-fit: contain; }
+
+        /* Admin Only Nav */
+        .nav-item.admin-only { display: none; }
+
+        /* User Management - List View */
+        .user-list { display: flex; flex-direction: column; gap: 12px; max-width: 800px; }
+        .user-card { background: var(--card-bg); border-radius: 12px; padding: 16px 20px; border: 1px solid var(--border); display: flex; align-items: center; gap: 16px; transition: all 0.2s; }
+        .user-card:hover { border-color: var(--text); }
+        .user-card.banned-user { opacity: 0.5; border-color: var(--red); }
+        .user-status-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--gray); flex-shrink: 0; }
+        .user-status-dot.online { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+        .user-info { flex: 1; }
+        .user-email { font-weight: 700; font-size: 1rem; }
+        .user-stats { color: var(--gray); font-size: 0.85rem; margin-top: 2px; }
+
+        /* Custom Role Dropdown */
+        .role-dropdown { position: relative; min-width: 150px; }
+        .role-button { width: 100%; padding: 10px 36px 10px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; border: 3px solid rgba(255,255,255,0.2); transition: all 0.2s; background-repeat: no-repeat; background-position: right 12px center; background-size: 12px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); box-shadow: 0 2px 8px rgba(0,0,0,0.3); text-align: left; }
+        .role-button:hover { border-color: rgba(255,255,255,0.5); }
+        .role-button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .role-button.admin { background-color: #2563eb; color: white; }
+        .role-button.researcher { background-color: #16a34a; color: white; }
+        .role-button.view-only { background-color: #eab308; color: #1a1a1a; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231a1a1a' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); }
+        .role-button.banned { background-color: var(--red); color: white; }
+        .role-menu { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--card-bg); border: 2px solid var(--border); border-radius: 8px; overflow: hidden; display: none; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+        .role-menu.open { display: block; }
+        .role-option { padding: 12px 16px; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.15s; border-bottom: 1px solid var(--border); color: white; }
+        .role-option:last-child { border-bottom: none; }
+        .role-option:hover { padding-left: 20px; }
+        .role-option.admin { background-color: #2563eb; }
+        .role-option.admin:hover { background-color: #1d4ed8; }
+        .role-option.researcher { background-color: #16a34a; }
+        .role-option.researcher:hover { background-color: #15803d; }
+        .role-option.view-only { background-color: #eab308; color: #1a1a1a; }
+        .role-option.view-only:hover { background-color: #ca8a04; }
+        .role-option.banned { background-color: var(--red); }
+        .role-option.banned:hover { background-color: #b91c1c; }
+
+        /* Activity Status */
+        .activity-status { padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .activity-status.active { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid #22c55e; }
+        .activity-status.inactive { background: rgba(156, 163, 175, 0.2); color: #9ca3af; border: 1px solid #9ca3af; }
+
+        /* Admin Only Nav */
+        .nav-item.admin-only { display: none; }
+
+        /* User Management - List View */
+        .user-list { display: flex; flex-direction: column; gap: 12px; max-width: 800px; }
+        .user-card { background: var(--card-bg); border-radius: 12px; padding: 16px 20px; border: 1px solid var(--border); display: flex; align-items: center; gap: 16px; transition: all 0.2s; }
+        .user-card:hover { border-color: var(--text); }
+        .user-card.banned { opacity: 0.5; border-color: var(--red); }
+        .user-status-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--gray); flex-shrink: 0; }
+        .user-status-dot.online { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+        .user-info { flex: 1; }
+        .user-email { font-weight: 700; font-size: 1rem; }
+        .user-stats { color: var(--gray); font-size: 0.85rem; margin-top: 2px; }
+
+        /* Custom Role Dropdown */
+        .role-dropdown { position: relative; min-width: 150px; }
+        .role-button { width: 100%; padding: 10px 36px 10px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; border: 3px solid rgba(255,255,255,0.2); transition: all 0.2s; background-repeat: no-repeat; background-position: right 12px center; background-size: 12px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); box-shadow: 0 2px 8px rgba(0,0,0,0.3); text-align: left; }
+        .role-button:hover { border-color: rgba(255,255,255,0.5); }
+        .role-button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .role-button.admin { background-color: #2563eb; color: white; }
+        .role-button.researcher { background-color: #16a34a; color: white; }
+        .role-button.view-only { background-color: #eab308; color: #1a1a1a; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231a1a1a' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); }
+        .role-button.banned { background-color: var(--red); color: white; }
+        .role-menu { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--card-bg); border: 2px solid var(--border); border-radius: 8px; overflow: hidden; display: none; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+        .role-menu.open { display: block; }
+        .role-option { padding: 12px 16px; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.15s; border-bottom: 1px solid var(--border); color: white; }
+        .role-option:last-child { border-bottom: none; }
+        .role-option:hover { padding-left: 20px; }
+        .role-option.admin { background-color: #2563eb; }
+        .role-option.admin:hover { background-color: #1d4ed8; }
+        .role-option.researcher { background-color: #16a34a; }
+        .role-option.researcher:hover { background-color: #15803d; }
+        .role-option.view-only { background-color: #eab308; color: #1a1a1a; }
+        .role-option.view-only:hover { background-color: #ca8a04; }
+        .role-option.banned { background-color: var(--red); }
+        .role-option.banned:hover { background-color: #b91c1c; }
+
+        /* Activity Status */
+        .activity-status { padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .activity-status.active { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid #22c55e; }
+        .activity-status.inactive { background: rgba(156, 163, 175, 0.2); color: #9ca3af; border: 1px solid #9ca3af; }
     </style>
     <script>
         function showLogin() { document.getElementById('loginTab').classList.add('active'); document.getElementById('signupTab').classList.remove('active'); document.getElementById('loginForm').classList.add('active'); document.getElementById('signupForm').classList.remove('active'); document.getElementById('authMessage').className = 'auth-message'; }
@@ -333,6 +437,9 @@
                 <div class="nav-item" data-panel="directory"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Suspect Directory</div>
                 <div class="nav-item" data-panel="stats"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>My Stats</div>
                 <div class="nav-item" data-panel="leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Leaderboard</div>
+                <div class="nav-item admin-only" data-panel="admin"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Admin Panel</div>
+                <div class="nav-item admin-only" data-panel="admin"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Admin Panel</div>
+                <div class="nav-item" data-panel="admin" id="adminNavItem" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Admin</div>
             </div>
         </nav>
 
@@ -394,6 +501,13 @@
         </div>
     </div>
 
+            <!-- Admin Panel -->
+            <div class="panel" id="panel-admin">
+                <h1 class="panel-title">Admin Panel<span class="admin-badge">ADMIN</span></h1>
+                <h2 style="font-size: 1.1rem; margin-bottom: 16px; color: var(--gray);">User Management</h2>
+                <div class="user-list" id="userList"></div>
+            </div>
+
     <!-- Modal -->
     <div class="modal" id="modal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title" id="modalTitle">Request Details</h2><button class="modal-close" id="modalClose">&times;</button></div><div class="modal-body" id="modalBody"></div><div class="modal-actions"><button class="modal-btn modal-btn-primary" id="modalCopy">Copy to Clipboard</button><button class="modal-btn modal-btn-secondary" id="modalCloseBtn">Close</button></div></div></div>
 
@@ -428,7 +542,15 @@
             var btn = document.getElementById('loginBtn'), msg = document.getElementById('authMessage');
             if (!supabaseClient) { msg.textContent = 'Connection error.'; msg.className = 'auth-message error'; return; }
             btn.disabled = true; btn.textContent = 'Signing in...';
-            try { var result = await supabaseClient.auth.signInWithPassword({ email: email, password: password }); if (result.error) { msg.textContent = result.error.message; msg.className = 'auth-message error'; } else { currentUser = result.data.user; showApp(); } } catch (err) { msg.textContent = 'Connection error.'; msg.className = 'auth-message error'; }
+            try { 
+                var result = await supabaseClient.auth.signInWithPassword({ email: email, password: password }); 
+                if (result.error) { msg.textContent = result.error.message; msg.className = 'auth-message error'; } 
+                else { 
+                    currentUser = result.data.user; 
+                    var hasAccess = await checkUserAccess();
+                    if (hasAccess) showApp();
+                } 
+            } catch (err) { msg.textContent = 'Connection error.'; msg.className = 'auth-message error'; }
             btn.disabled = false; btn.textContent = 'Sign In';
         });
 
@@ -445,7 +567,28 @@
 
         document.getElementById('logoutBtn').addEventListener('click', async function() { if (supabaseClient) try { await supabaseClient.auth.signOut(); } catch(e) {} currentUser = null; document.getElementById('appContainer').classList.remove('active'); document.getElementById('authContainer').style.display = 'flex'; });
 
-        function showApp() { document.getElementById('authContainer').style.display = 'none'; document.getElementById('appContainer').classList.add('active'); document.getElementById('userEmail').textContent = currentUser ? currentUser.email : ''; loadUserGenerations(); if (currentUser && currentUser.email.toLowerCase() === 'jared@spynetwork.co') { document.getElementById('jaredCorner').style.display = 'block'; } }
+        function showApp() { 
+            document.getElementById('authContainer').style.display = 'none'; 
+            document.getElementById('appContainer').classList.add('active'); 
+            document.getElementById('userEmail').textContent = currentUser ? currentUser.email : ''; 
+            loadUserGenerations(); 
+            if (currentUser && currentUser.email.toLowerCase() === 'jared@spynetwork.co') { document.getElementById('jaredCorner').style.display = 'block'; }
+            if (isAdmin()) { document.querySelector('.nav-item.admin-only').style.display = 'flex'; }
+        }
+
+        async function checkUserAccess() {
+            if (!supabaseClient || !currentUser) return true;
+            try {
+                var result = await supabaseClient.from('user_roles').select('role').eq('email', currentUser.email.toLowerCase()).single();
+                if (result.data && result.data.role === 'banned') {
+                    await supabaseClient.auth.signOut();
+                    document.getElementById('authMessage').textContent = 'You no longer have access to this site. Please contact an admin.';
+                    document.getElementById('authMessage').className = 'auth-message error';
+                    return false;
+                }
+            } catch(e) {}
+            return true;
+        }
 
         // Menu
         var menuBtn = document.getElementById('menuBtn'), sidebar = document.getElementById('sidebar'), overlay = document.getElementById('overlay');
@@ -465,6 +608,7 @@
                 if (panelId === 'directory') loadDirectory();
                 if (panelId === 'stats') loadStats();
                 if (panelId === 'leaderboard') loadLeaderboard();
+                if (panelId === 'admin') loadAdminPanel();
             });
         });
 
@@ -509,17 +653,50 @@
                 container.innerHTML = '<div class="empty-state"><p>' + (searchTerm ? 'No results found.' : 'No generations yet. Create your first FOIA request!') + '</p></div>'; 
                 return; 
             }
-            container.innerHTML = filtered.map(function(gen, idx) {
-                var realIdx = userGenerations.indexOf(gen);
-                var date = new Date(gen.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-                var template = generateTemplateHTML(gen);
-                return '<div class="gen-item"><div class="gen-item-header"><span class="gen-item-title">' + gen.state + ' - ' + gen.suspect_names + '</span><span class="gen-item-date">' + date + '</span></div><div class="gen-item-details">' + gen.subject_matter + ' • ' + gen.location + '</div><div class="gen-item-template" id="template-' + realIdx + '">' + template.replace(/\n/g, '<br>') + '</div><div class="gen-item-actions"><button class="gen-copy-btn" onclick="copyTemplate(' + realIdx + ')">Copy Template</button></div></div>';
+            container.innerHTML = filtered.map(function(gen) {
+                var date = new Date(gen.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                return '<div class="gen-item" onclick="showGenDetail(\'' + gen.id + '\')">' +
+                    '<button class="card-delete" onclick="event.stopPropagation(); deleteGeneration(\'' + gen.id + '\', \'' + gen.user_id + '\')" title="Delete">×</button>' +
+                    '<div class="gen-item-title">' + gen.suspect_names + '</div>' +
+                    '<div class="gen-item-date">' + date + '</div>' +
+                    '<div class="gen-item-details">' + gen.state + ' • ' + gen.subject_matter + '</div>' +
+                '</div>';
             }).join('');
         }
 
         document.getElementById('historySearch').addEventListener('input', function() {
             loadHistory(this.value);
         });
+
+        function showGenDetail(genId) {
+            var gen = userGenerations.find(function(g) { return g.id === genId; });
+            if (!gen) return;
+            var date = new Date(gen.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            var template = generateTemplateHTML(gen);
+            document.getElementById('modalTitle').textContent = gen.suspect_names;
+            document.getElementById('modalBody').innerHTML = '<div class="suspect-detail"><div class="suspect-detail-header"><span class="suspect-detail-date">' + date + '</span><span class="suspect-detail-user">' + gen.state + '</span></div><div class="suspect-detail-template">' + template.replace(/\n/g, '<br>') + '</div></div>';
+            document.getElementById('modal').classList.add('active');
+        }
+
+        async function deleteGeneration(genId, genUserId) {
+            var canDelete = isAdmin() || (currentUser && currentUser.id === genUserId);
+            if (!canDelete) { alert('You can only delete your own generations.'); return; }
+            if (!confirm('Are you sure you want to delete this generation?')) return;
+            
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('foia_requests').delete().eq('id', genId);
+                    userGenerations = userGenerations.filter(function(g) { return g.id !== genId; });
+                    loadHistory(document.getElementById('historySearch').value);
+                    document.getElementById('copySuccess').textContent = 'Deleted!';
+                    document.getElementById('copySuccess').classList.add('show');
+                    setTimeout(function() { 
+                        document.getElementById('copySuccess').classList.remove('show');
+                        document.getElementById('copySuccess').textContent = 'Copied to clipboard!';
+                    }, 2000);
+                } catch(e) { alert('Error deleting generation.'); console.log(e); }
+            }
+        }
 
         function copyTemplate(idx) {
             var gen = userGenerations[idx];
@@ -554,7 +731,10 @@
                 });
                 
                 var suspects = Object.keys(suspectMap).map(function(name) {
-                    return { name: name, count: suspectMap[name].length, generations: suspectMap[name] };
+                    var gens = suspectMap[name];
+                    // Check if user can delete (admin or owns all generations for this suspect)
+                    var canDelete = isAdmin() || gens.every(function(g) { return currentUser && g.user_id === currentUser.id; });
+                    return { name: name, count: gens.length, generations: gens, canDelete: canDelete };
                 }).sort(function(a, b) { return b.count - a.count; });
                 
                 // Filter by search term
@@ -565,10 +745,35 @@
                 
                 if (suspects.length === 0) { container.innerHTML = '<div class="empty-state">No suspects found</div>'; return; }
                 
-                container.innerHTML = suspects.map(function(suspect, idx) {
-                    return '<div class="suspect-card" onclick="showSuspectDetail(\'' + suspect.name.replace(/'/g, "\\'") + '\')"><div class="suspect-name">' + suspect.name + '</div><div class="suspect-count">' + suspect.count + ' generation' + (suspect.count > 1 ? 's' : '') + '</div></div>';
+                container.innerHTML = suspects.map(function(suspect) {
+                    var deleteBtn = '<button class="card-delete' + (suspect.canDelete ? '' : ' hidden') + '" onclick="event.stopPropagation(); deleteSuspect(\'' + suspect.name.replace(/'/g, "\\'") + '\')" title="Delete all generations for this suspect">×</button>';
+                    return '<div class="suspect-card" onclick="showSuspectDetail(\'' + suspect.name.replace(/'/g, "\\'") + '\')">' + deleteBtn + '<div class="suspect-name">' + suspect.name + '</div><div class="suspect-count">' + suspect.count + ' generation' + (suspect.count > 1 ? 's' : '') + '</div></div>';
                 }).join('');
             } catch(e) { container.innerHTML = '<div class="empty-state">Error loading directory</div>'; console.log(e); }
+        }
+
+        async function deleteSuspect(suspectName) {
+            var generations = allSuspects.filter(function(gen) { return gen.suspect_names === suspectName; });
+            var canDelete = isAdmin() || generations.every(function(g) { return currentUser && g.user_id === currentUser.id; });
+            if (!canDelete) { alert('You can only delete suspects where you created all generations.'); return; }
+            if (!confirm('Delete all ' + generations.length + ' generation(s) for "' + suspectName + '"?')) return;
+            
+            if (supabaseClient) {
+                try {
+                    for (var i = 0; i < generations.length; i++) {
+                        await supabaseClient.from('foia_requests').delete().eq('id', generations[i].id);
+                    }
+                    // Refresh data
+                    loadDirectory(document.getElementById('directorySearch').value);
+                    loadUserGenerations();
+                    document.getElementById('copySuccess').textContent = 'Deleted!';
+                    document.getElementById('copySuccess').classList.add('show');
+                    setTimeout(function() { 
+                        document.getElementById('copySuccess').classList.remove('show');
+                        document.getElementById('copySuccess').textContent = 'Copied to clipboard!';
+                    }, 2000);
+                } catch(e) { alert('Error deleting suspect.'); console.log(e); }
+            }
         }
 
         document.getElementById('directorySearch').addEventListener('input', function() {
@@ -703,6 +908,118 @@
             document.getElementById('copySuccess').classList.add('show');
             setTimeout(function() { document.getElementById('copySuccess').classList.remove('show'); }, 2000);
         });
+
+        // Admin Panel
+        var allUsers = [], userRoles = {}, openRoleDropdown = null;
+
+        async function loadAdminPanel() {
+            var container = document.getElementById('userList');
+            container.innerHTML = '<div class="empty-state">Loading users...</div>';
+            if (!supabaseClient) { container.innerHTML = '<div class="empty-state">Could not load users</div>'; return; }
+            
+            try {
+                // Get all unique users from foia_requests
+                var result = await supabaseClient.from('foia_requests').select('user_email, user_id');
+                if (!result.data) { container.innerHTML = '<div class="empty-state">No users found</div>'; return; }
+                
+                // Get user roles from user_roles table
+                var rolesResult = await supabaseClient.from('user_roles').select('*');
+                if (rolesResult.data) {
+                    rolesResult.data.forEach(function(r) { userRoles[r.email.toLowerCase()] = r.role; });
+                }
+                
+                // Group by email and count generations
+                var userMap = {};
+                result.data.forEach(function(row) {
+                    var email = row.user_email || 'unknown';
+                    if (!userMap[email]) userMap[email] = { email: email, count: 0, id: row.user_id };
+                    userMap[email].count++;
+                });
+                
+                allUsers = Object.values(userMap).sort(function(a, b) { return b.count - a.count; });
+                renderUserList();
+            } catch(e) { container.innerHTML = '<div class="empty-state">Error loading users</div>'; console.log(e); }
+        }
+
+        function getUserRole(email) {
+            if (ADMINS.indexOf(email.toLowerCase()) !== -1) return 'admin';
+            return userRoles[email.toLowerCase()] || 'researcher';
+        }
+
+        function getRoleLabel(role) {
+            if (role === 'view-only') return 'View Only';
+            return role.charAt(0).toUpperCase() + role.slice(1);
+        }
+
+        function toggleRoleDropdown(email) {
+            var menuId = 'role-menu-' + email.replace(/[@.]/g, '-');
+            var menu = document.getElementById(menuId);
+            if (openRoleDropdown && openRoleDropdown !== menu) openRoleDropdown.classList.remove('open');
+            menu.classList.toggle('open');
+            openRoleDropdown = menu.classList.contains('open') ? menu : null;
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.role-dropdown') && openRoleDropdown) {
+                openRoleDropdown.classList.remove('open');
+                openRoleDropdown = null;
+            }
+        });
+
+        async function changeUserRole(email, newRole) {
+            if (openRoleDropdown) { openRoleDropdown.classList.remove('open'); openRoleDropdown = null; }
+            if (PROTECTED.indexOf(email.toLowerCase()) !== -1 && newRole !== 'admin') {
+                alert("Can't change role for protected admins!");
+                return;
+            }
+            
+            try {
+                // Upsert role in user_roles table
+                await supabaseClient.from('user_roles').upsert({ email: email.toLowerCase(), role: newRole }, { onConflict: 'email' });
+                userRoles[email.toLowerCase()] = newRole;
+                
+                var msg = newRole === 'banned' ? 'Access removed for ' + email : 'Role updated to ' + getRoleLabel(newRole);
+                document.getElementById('copySuccess').textContent = msg;
+                document.getElementById('copySuccess').classList.add('show');
+                setTimeout(function() { 
+                    document.getElementById('copySuccess').classList.remove('show');
+                    document.getElementById('copySuccess').textContent = 'Copied to clipboard!';
+                }, 2000);
+                
+                renderUserList();
+            } catch(e) { alert('Error updating role'); console.log(e); }
+        }
+
+        function renderUserList() {
+            var container = document.getElementById('userList');
+            if (allUsers.length === 0) { container.innerHTML = '<div class="empty-state">No users found</div>'; return; }
+            
+            container.innerHTML = allUsers.map(function(user) {
+                var role = getUserRole(user.email);
+                var isProtected = PROTECTED.indexOf(user.email.toLowerCase()) !== -1;
+                var cardClass = role === 'banned' ? 'user-card banned-user' : 'user-card';
+                var menuId = 'role-menu-' + user.email.replace(/[@.]/g, '-');
+                
+                var dropdown = '';
+                if (isProtected) {
+                    dropdown = '<div class="role-dropdown"><button class="role-button ' + role + '" disabled>' + getRoleLabel(role) + '</button></div>';
+                } else {
+                    dropdown = '<div class="role-dropdown">' +
+                        '<button class="role-button ' + role + '" onclick="toggleRoleDropdown(\'' + user.email + '\')">' + getRoleLabel(role) + '</button>' +
+                        '<div class="role-menu" id="' + menuId + '">' +
+                            '<div class="role-option admin" onclick="changeUserRole(\'' + user.email + '\', \'admin\')">Admin</div>' +
+                            '<div class="role-option researcher" onclick="changeUserRole(\'' + user.email + '\', \'researcher\')">Researcher</div>' +
+                            '<div class="role-option view-only" onclick="changeUserRole(\'' + user.email + '\', \'view-only\')">View Only</div>' +
+                            '<div class="role-option banned" onclick="changeUserRole(\'' + user.email + '\', \'banned\')">Banned</div>' +
+                        '</div></div>';
+                }
+                
+                return '<div class="' + cardClass + '">' +
+                    '<div class="user-info"><div class="user-email">' + user.email + '</div><div class="user-stats">' + user.count + ' generations</div></div>' +
+                    dropdown +
+                '</div>';
+            }).join('');
+        }
     </script>
 </body>
 </html>
