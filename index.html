@@ -961,12 +961,20 @@
                 }
                 
                 // Get active users from presence table
-                var presenceResult = await supabaseClient.from('user_presence').select('email, last_seen');
-                if (presenceResult.data) {
-                    var now = Date.now();
-                    activeUsers = presenceResult.data.filter(function(p) {
-                        return (now - new Date(p.last_seen).getTime()) < 60000; // Active in last 60 seconds
-                    }).map(function(p) { return p.email.toLowerCase(); });
+                activeUsers = [];
+                try {
+                    var presenceResult = await supabaseClient.from('user_presence').select('email, last_seen');
+                    if (presenceResult.data) {
+                        var now = Date.now();
+                        activeUsers = presenceResult.data.filter(function(p) {
+                            return (now - new Date(p.last_seen).getTime()) < 60000; // Active in last 60 seconds
+                        }).map(function(p) { return p.email.toLowerCase(); });
+                    }
+                } catch(e) { console.log('Presence table may not exist yet'); }
+                
+                // Always show current user as active
+                if (currentUser && activeUsers.indexOf(currentUser.email.toLowerCase()) === -1) {
+                    activeUsers.push(currentUser.email.toLowerCase());
                 }
                 
                 // Group by email and count generations
