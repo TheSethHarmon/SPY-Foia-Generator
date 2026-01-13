@@ -1692,13 +1692,14 @@
                 return;
             }
             
-            // Create mailto link - use location.href for better compatibility
-            var mailtoLink = 'mailto:' + encodeURIComponent(to) + 
-                '?subject=' + encodeURIComponent(subject) + 
+            // Use Gmail compose URL directly
+            var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1' +
+                '&to=' + encodeURIComponent(to) +
+                '&su=' + encodeURIComponent(subject) +
                 '&body=' + encodeURIComponent(body);
             
-            // Use location.href instead of window.open for mailto
-            window.location.href = mailtoLink;
+            // Open Gmail compose in new tab
+            window.open(gmailUrl, '_blank');
             
             // Show thread ID section
             document.getElementById('threadSection').classList.add('show');
