@@ -697,6 +697,147 @@
         }
         .confirm-btn-no:hover { background: var(--border); }
 
+        /* Email Modal */
+        .email-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            z-index: 1002;
+            padding: 20px;
+        }
+        .email-modal.active { opacity: 1; visibility: visible; }
+        .email-content {
+            background: var(--card-bg);
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            padding: 32px;
+            border: 1px solid var(--border);
+        }
+        .email-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--text);
+        }
+        .email-title { font-size: 1.25rem; font-weight: 700; }
+        .email-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--border);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+        }
+        .email-close:hover { background: var(--gray); }
+        .email-form-group { margin-bottom: 16px; }
+        .email-form-group label {
+            display: block;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+        }
+        .email-form-group input,
+        .email-form-group textarea {
+            width: 100%;
+            padding: 12px 14px;
+            font-family: inherit;
+            font-size: 1rem;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text);
+            transition: all 0.2s;
+        }
+        .email-form-group input:focus,
+        .email-form-group textarea:focus {
+            outline: none;
+            border-color: var(--text);
+            box-shadow: 0 0 0 3px rgba(128,128,128,0.2);
+        }
+        .email-form-group textarea {
+            min-height: 200px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+        .email-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .email-btn {
+            flex: 1;
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .email-btn-send {
+            background: var(--text);
+            color: var(--bg);
+            border: none;
+        }
+        .email-btn-send:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .email-btn-cancel {
+            background: var(--card-bg);
+            color: var(--text);
+            border: 2px solid var(--border);
+        }
+        .email-btn-cancel:hover { border-color: var(--text); }
+        .email-btn svg { width: 18px; height: 18px; }
+
+        /* Thread ID Input Section */
+        .thread-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            display: none;
+        }
+        .thread-section.show { display: block; }
+        .thread-info {
+            background: var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            color: var(--gray-dark);
+            line-height: 1.5;
+        }
+        .thread-input-row {
+            display: flex;
+            gap: 12px;
+        }
+        .thread-input-row input { flex: 1; }
+        .thread-input-row button {
+            padding: 12px 20px;
+            background: var(--text);
+            color: var(--bg);
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .thread-input-row button:hover { opacity: 0.8; }
+
         /* Modal */
         .modal {
             position: fixed;
@@ -946,6 +1087,7 @@
                                 <div class="output-actions">
                                     <button type="button" class="btn-secondary" id="clearBtn">Clear</button>
                                     <button type="button" class="btn-secondary" id="copyBtn" disabled>Copy</button>
+                                    <button type="button" class="btn-secondary" id="emailBtn" disabled>✉ Email</button>
                                 </div>
                             </div>
                             <div class="formatting-toolbar">
@@ -1030,6 +1172,44 @@
             <div class="confirm-buttons">
                 <button class="confirm-btn confirm-btn-no" id="confirmNo">No</button>
                 <button class="confirm-btn confirm-btn-yes" id="confirmYes">Yes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Modal -->
+    <div class="email-modal" id="emailModal">
+        <div class="email-content">
+            <div class="email-header">
+                <h2 class="email-title">Send FOIA Request</h2>
+                <button class="email-close" id="emailClose">&times;</button>
+            </div>
+            <div class="email-form-group">
+                <label for="emailTo">Recipient Email (PD) *</label>
+                <input type="email" id="emailTo" placeholder="records@policedept.gov">
+            </div>
+            <div class="email-form-group">
+                <label for="emailSubject">Subject</label>
+                <input type="text" id="emailSubject" placeholder="FOIA Request">
+            </div>
+            <div class="email-form-group">
+                <label for="emailBody">Message</label>
+                <textarea id="emailBody" placeholder="Your request will appear here..."></textarea>
+            </div>
+            <div class="email-actions">
+                <button class="email-btn email-btn-cancel" id="emailCancel">Cancel</button>
+                <button class="email-btn email-btn-send" id="emailSend">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+                    Open in Email
+                </button>
+            </div>
+            <div class="thread-section" id="threadSection">
+                <div class="thread-info">
+                    <strong>Email sent?</strong> After sending, paste the Gmail thread ID here to track this request. You can find it in the URL after <code>#inbox/</code>
+                </div>
+                <div class="thread-input-row">
+                    <input type="text" id="threadId" placeholder="e.g. FMfcgzQfBQLFvSdJMdpSzqBpdwxpDfm">
+                    <button id="saveThreadBtn">Save</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1400,6 +1580,7 @@
             document.getElementById('foiaForm').reset();
             document.getElementById('outputText').innerHTML = '';
             document.getElementById('copyBtn').disabled = true;
+            document.getElementById('emailBtn').disabled = true;
         });
         
         document.getElementById('foiaForm').addEventListener('submit', async function(e) {
@@ -1421,6 +1602,7 @@
             document.getElementById('foiaForm').reset();
             document.getElementById('outputText').innerHTML = '';
             document.getElementById('copyBtn').disabled = true;
+            document.getElementById('emailBtn').disabled = true;
         });
 
         async function generateRequest() {
@@ -1457,6 +1639,7 @@
 
             document.getElementById('outputText').innerHTML = 'Hello!<br><br>Pursuant to the ' + info.name + ', ' + info.law + ', I am requesting access to and copies of the following public records:<br><br>Suspect Name(s): ' + suspect + '<br>Subject Matter/Crime: ' + subject + '<br>Date of Incident: ' + fDate + '<br>Location: ' + loc + '<br><br><b><u>Records Requested:</u></b><br><br>' + recList + '<br><br><b><u>Legal Basis:</u></b><br><br>This request is made pursuant to the ' + info.law + '. Under this law, public records are presumed to be open for inspection and copying by members of the public, subject to specific statutory exemptions.<br><br>Please feel free to contact me if you have any questions regarding this request or require any clarification.<br><br><i>Electronic delivery of all documents is preferred.</i><br><br>Thank you for your prompt attention to this matter.<br><br>Sincerely,<br><br>' + name;
             document.getElementById('copyBtn').disabled = false;
+            document.getElementById('emailBtn').disabled = false;
         }
 
         document.getElementById('copyBtn').addEventListener('click', async function() {
@@ -1471,6 +1654,88 @@
             }
             document.getElementById('copySuccess').classList.add('show');
             setTimeout(function() { document.getElementById('copySuccess').classList.remove('show'); }, 2000);
+        });
+
+        // Email functionality
+        var currentRequestId = null;
+        
+        function showEmailModal() {
+            var outputText = document.getElementById('outputText').innerText;
+            var state = document.getElementById('state').value;
+            var suspect = document.getElementById('suspectNames').value;
+            
+            document.getElementById('emailSubject').value = 'FOIA Request - ' + state + ' - ' + suspect;
+            document.getElementById('emailBody').value = outputText;
+            document.getElementById('threadSection').classList.remove('show');
+            document.getElementById('threadId').value = '';
+            document.getElementById('emailModal').classList.add('active');
+        }
+        
+        function hideEmailModal() {
+            document.getElementById('emailModal').classList.remove('active');
+        }
+        
+        document.getElementById('emailBtn').addEventListener('click', showEmailModal);
+        document.getElementById('emailClose').addEventListener('click', hideEmailModal);
+        document.getElementById('emailCancel').addEventListener('click', hideEmailModal);
+        document.getElementById('emailModal').addEventListener('click', function(e) {
+            if (e.target === this) hideEmailModal();
+        });
+        
+        document.getElementById('emailSend').addEventListener('click', function() {
+            var to = document.getElementById('emailTo').value;
+            var subject = document.getElementById('emailSubject').value;
+            var body = document.getElementById('emailBody').value;
+            
+            if (!to) {
+                alert('Please enter a recipient email address');
+                return;
+            }
+            
+            // Create mailto link
+            var mailtoLink = 'mailto:' + encodeURIComponent(to) + 
+                '?subject=' + encodeURIComponent(subject) + 
+                '&body=' + encodeURIComponent(body);
+            
+            // Open in new window
+            window.open(mailtoLink, '_blank');
+            
+            // Show thread ID section
+            document.getElementById('threadSection').classList.add('show');
+        });
+        
+        document.getElementById('saveThreadBtn').addEventListener('click', async function() {
+            var threadId = document.getElementById('threadId').value.trim();
+            var to = document.getElementById('emailTo').value;
+            
+            if (!threadId) {
+                alert('Please enter a thread ID');
+                return;
+            }
+            
+            // Save thread ID to the most recent generation
+            if (supabaseClient && currentUser && userGenerations.length > 0) {
+                try {
+                    var latestGen = userGenerations[0];
+                    await supabaseClient.from('foia_requests').update({
+                        gmail_thread_id: threadId,
+                        recipient_email: to
+                    }).eq('id', latestGen.id);
+                    
+                    document.getElementById('copySuccess').textContent = 'Thread ID saved!';
+                    document.getElementById('copySuccess').classList.add('show');
+                    setTimeout(function() { 
+                        document.getElementById('copySuccess').classList.remove('show');
+                        document.getElementById('copySuccess').textContent = 'Copied to clipboard!';
+                    }, 2000);
+                    
+                    hideEmailModal();
+                    loadUserGenerations();
+                } catch(e) {
+                    console.log('Error saving thread ID:', e);
+                    alert('Error saving thread ID. Please try again.');
+                }
+            }
         });
     </script>
 </body>
