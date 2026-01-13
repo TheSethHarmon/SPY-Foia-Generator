@@ -314,6 +314,8 @@
         .user-card { background: var(--card-bg); border-radius: 12px; padding: 16px 20px; border: 1px solid var(--border); display: flex; align-items: center; gap: 16px; transition: all 0.2s; }
         .user-card:hover { border-color: var(--text); }
         .user-card.banned-user { opacity: 0.5; border-color: var(--red); }
+        .user-status-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--gray); flex-shrink: 0; }
+        .user-status-dot.online { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
         .user-info { flex: 1; }
         .user-email { font-weight: 600; font-size: 1rem; }
         .user-stats { color: var(--gray); font-size: 0.85rem; margin-top: 2px; }
@@ -1057,6 +1059,7 @@
                 }
                 
                 return '<div class="' + cardClass + '">' +
+                    '<div class="user-status-dot' + (isActive ? ' online' : '') + '"></div>' +
                     '<div class="user-info"><div class="user-email">' + user.email + '</div><div class="user-stats">' + user.count + ' generations</div></div>' +
                     '<div class="' + activityClass + '">' + activityText + '</div>' +
                     dropdown +
