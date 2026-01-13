@@ -75,9 +75,7 @@
         .menu-btn { position: fixed; top: 20px; left: 20px; width: 44px; height: 44px; background: var(--card-bg); border: 2px solid var(--border); border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; z-index: 1000; transition: all 0.3s; }
         .menu-btn:hover { border-color: var(--text); }
         .menu-btn span { width: 20px; height: 2px; background: var(--text); transition: all 0.3s; }
-        .menu-btn.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
-        .menu-btn.active span:nth-child(2) { opacity: 0; }
-        .menu-btn.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        .menu-btn.active { opacity: 0; pointer-events: none; }
 
         /* Theme Toggle */
         .theme-toggle { position: fixed; bottom: 20px; left: 20px; width: 44px; height: 44px; border-radius: 50%; background: var(--card-bg); border: 2px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; }
@@ -405,7 +403,7 @@
         <div class="user-menu"><span class="user-email" id="userEmail"></span><button class="logout-btn" id="logoutBtn">Sign Out</button></div>
         <div class="overlay" id="overlay"></div>
         <nav class="sidebar" id="sidebar">
-            <div class="sidebar-header"><span>Menu</span><button class="sidebar-close" onclick="document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('active');">&times;</button></div>
+            <div class="sidebar-header"><span>Menu</span></div>
             <div class="sidebar-nav">
                 <div class="nav-item active" data-panel="generator"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Generator</div>
                 <div class="nav-item" data-panel="history"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Previous Generations</div>
@@ -715,16 +713,26 @@
             showDeleteModal('Are you sure you want to delete this generation?', async function() {
                 if (supabaseClient) {
                     try {
-                        await supabaseClient.from('foia_requests').delete().eq('id', genId);
-                        userGenerations = userGenerations.filter(function(g) { return g.id !== genId; });
+                        var result = await supabaseClient.from('foia_requests').delete().eq('id', genId);
+                        console.log('Delete result:', result);
+                        if (result.error) { alert('Error deleting: ' + result.error.message); return; }
+                        
+                        // Refresh all data from database
+                        await loadUserGenerations();
                         loadHistory(document.getElementById('historySearch').value);
+                        // Also refresh suspect directory data
+                        if (allSuspects.length > 0) {
+                            var dirResult = await supabaseClient.from('foia_requests').select('*').order('created_at', { ascending: false });
+                            if (dirResult.data) allSuspects = dirResult.data;
+                        }
+                        
                         document.getElementById('copySuccess').textContent = 'Deleted!';
                         document.getElementById('copySuccess').classList.add('show');
                         setTimeout(function() { 
                             document.getElementById('copySuccess').classList.remove('show');
                             document.getElementById('copySuccess').textContent = 'Copied to clipboard!';
                         }, 2000);
-                    } catch(e) { alert('Error deleting generation.'); console.log(e); }
+                    } catch(e) { alert('Error deleting generation: ' + e.message); console.log(e); }
                 }
             });
         }
@@ -791,19 +799,23 @@
             showDeleteModal('Delete all ' + generations.length + ' generation(s) for "' + suspectName + '"?', async function() {
                 if (supabaseClient) {
                     try {
-                        for (var i = 0; i < generations.length; i++) {
-                            await supabaseClient.from('foia_requests').delete().eq('id', generations[i].id);
-                        }
-                        // Refresh data
-                        loadDirectory(document.getElementById('directorySearch').value);
-                        loadUserGenerations();
+                        // Delete all generations for this suspect
+                        var ids = generations.map(function(g) { return g.id; });
+                        var result = await supabaseClient.from('foia_requests').delete().in('id', ids);
+                        console.log('Delete suspect result:', result);
+                        if (result.error) { alert('Error deleting: ' + result.error.message); return; }
+                        
+                        // Refresh all data from database
+                        await loadUserGenerations();
+                        await loadDirectory(document.getElementById('directorySearch').value);
+                        
                         document.getElementById('copySuccess').textContent = 'Deleted!';
                         document.getElementById('copySuccess').classList.add('show');
                         setTimeout(function() { 
                             document.getElementById('copySuccess').classList.remove('show');
                             document.getElementById('copySuccess').textContent = 'Copied to clipboard!';
                         }, 2000);
-                    } catch(e) { alert('Error deleting suspect.'); console.log(e); }
+                    } catch(e) { alert('Error deleting suspect: ' + e.message); console.log(e); }
                 }
             });
         }
