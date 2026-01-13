@@ -360,6 +360,32 @@
         .delete-modal-btn.cancel:hover { background: #444; }
         .delete-modal-btn.confirm { background: var(--red); color: white; }
         .delete-modal-btn.confirm:hover { background: #b91c1c; }
+
+        /* User Detail Modal */
+        .user-detail-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .user-detail-modal.active { display: flex; }
+        .user-detail-content { background: var(--card-bg); border-radius: 16px; max-width: 700px; width: 100%; max-height: 85vh; overflow-y: auto; border: 1px solid var(--border); }
+        .user-detail-header { padding: 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--card-bg); z-index: 1; }
+        .user-detail-header h2 { font-size: 1.25rem; font-weight: 700; }
+        .user-detail-close { background: none; border: none; color: var(--gray); font-size: 1.5rem; cursor: pointer; padding: 0; line-height: 1; }
+        .user-detail-close:hover { color: var(--text); }
+        .user-detail-body { padding: 24px; }
+        .user-detail-section { margin-bottom: 24px; }
+        .user-detail-section:last-child { margin-bottom: 0; }
+        .user-detail-section-title { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+        .user-detail-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        .user-detail-item { background: var(--bg); padding: 12px 16px; border-radius: 8px; }
+        .user-detail-item.full-width { grid-column: span 2; }
+        .user-detail-label { font-size: 0.75rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .user-detail-value { font-size: 1rem; font-weight: 600; word-break: break-all; }
+        .user-detail-value.small { font-size: 0.85rem; font-weight: 400; }
+        .user-detail-generations { max-height: 200px; overflow-y: auto; }
+        .user-detail-gen-item { padding: 12px; background: var(--bg); border-radius: 8px; margin-bottom: 8px; }
+        .user-detail-gen-item:last-child { margin-bottom: 0; }
+        .user-detail-gen-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .user-detail-gen-suspect { font-weight: 600; }
+        .user-detail-gen-date { font-size: 0.8rem; color: var(--gray); }
+        .user-detail-gen-meta { font-size: 0.8rem; color: var(--gray); }
     </style>
     <script>
         function showLogin() { document.getElementById('loginTab').classList.add('active'); document.getElementById('signupTab').classList.remove('active'); document.getElementById('loginForm').classList.add('active'); document.getElementById('signupForm').classList.remove('active'); document.getElementById('authMessage').className = 'auth-message'; }
@@ -500,6 +526,17 @@
                 <button class="delete-modal-btn cancel" id="deleteCancelBtn">Cancel</button>
                 <button class="delete-modal-btn confirm" id="deleteConfirmBtn">Delete</button>
             </div>
+        </div>
+    </div>
+
+    <!-- User Detail Modal -->
+    <div class="user-detail-modal" id="userDetailModal">
+        <div class="user-detail-content">
+            <div class="user-detail-header">
+                <h2 id="userDetailTitle">User Details</h2>
+                <button class="user-detail-close" onclick="document.getElementById('userDetailModal').classList.remove('active')">&times;</button>
+            </div>
+            <div class="user-detail-body" id="userDetailBody"></div>
         </div>
     </div>
 
@@ -962,14 +999,33 @@
             if (!supabaseClient) { container.innerHTML = '<div class="empty-state">Could not load users</div>'; return; }
             
             try {
-                // Get all unique users from foia_requests
-                var result = await supabaseClient.from('foia_requests').select('user_email, user_id');
-                if (!result.data) { container.innerHTML = '<div class="empty-state">No users found</div>'; return; }
+                var userMap = {};
                 
-                // Get user roles from user_roles table
+                // Always add current user
+                if (currentUser) {
+                    userMap[currentUser.email.toLowerCase()] = { email: currentUser.email, count: 0, id: currentUser.id };
+                }
+                
+                // Get users from foia_requests
+                var result = await supabaseClient.from('foia_requests').select('user_email, user_id');
+                if (result.data) {
+                    result.data.forEach(function(row) {
+                        var email = row.user_email || 'unknown';
+                        var emailLower = email.toLowerCase();
+                        if (!userMap[emailLower]) userMap[emailLower] = { email: email, count: 0, id: row.user_id };
+                        userMap[emailLower].count++;
+                    });
+                }
+                
+                // Get user roles from user_roles table (also adds users who have roles but no generations)
                 var rolesResult = await supabaseClient.from('user_roles').select('*');
                 if (rolesResult.data) {
-                    rolesResult.data.forEach(function(r) { userRoles[r.email.toLowerCase()] = r.role; });
+                    rolesResult.data.forEach(function(r) { 
+                        userRoles[r.email.toLowerCase()] = r.role;
+                        if (!userMap[r.email.toLowerCase()]) {
+                            userMap[r.email.toLowerCase()] = { email: r.email, count: 0, id: null };
+                        }
+                    });
                 }
                 
                 // Get active users from presence table
@@ -989,15 +1045,13 @@
                     activeUsers.push(currentUser.email.toLowerCase());
                 }
                 
-                // Group by email and count generations
-                var userMap = {};
-                result.data.forEach(function(row) {
-                    var email = row.user_email || 'unknown';
-                    if (!userMap[email]) userMap[email] = { email: email, count: 0, id: row.user_id };
-                    userMap[email].count++;
-                });
-                
                 allUsers = Object.values(userMap).sort(function(a, b) { return b.count - a.count; });
+                
+                if (allUsers.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No users found</div>';
+                    return;
+                }
+                
                 renderUserList();
             } catch(e) { container.innerHTML = '<div class="empty-state">Error loading users</div>'; console.log(e); }
         }
@@ -1066,25 +1120,126 @@
                 
                 var dropdown = '';
                 if (isProtected) {
-                    dropdown = '<div class="role-dropdown"><button class="role-button ' + role + '" disabled>' + getRoleLabel(role) + '</button></div>';
+                    dropdown = '<div class="role-dropdown" onclick="event.stopPropagation()"><button class="role-button ' + role + '" disabled>' + getRoleLabel(role) + '</button></div>';
                 } else {
-                    dropdown = '<div class="role-dropdown">' +
-                        '<button class="role-button ' + role + '" onclick="toggleRoleDropdown(\'' + user.email + '\')">' + getRoleLabel(role) + '</button>' +
+                    dropdown = '<div class="role-dropdown" onclick="event.stopPropagation()">' +
+                        '<button class="role-button ' + role + '" onclick="event.stopPropagation(); toggleRoleDropdown(\'' + user.email + '\')">' + getRoleLabel(role) + '</button>' +
                         '<div class="role-menu" id="' + menuId + '">' +
-                            '<div class="role-option admin" onclick="changeUserRole(\'' + user.email + '\', \'admin\')">Admin</div>' +
-                            '<div class="role-option researcher" onclick="changeUserRole(\'' + user.email + '\', \'researcher\')">Researcher</div>' +
-                            '<div class="role-option view-only" onclick="changeUserRole(\'' + user.email + '\', \'view-only\')">View Only</div>' +
-                            '<div class="role-option banned" onclick="changeUserRole(\'' + user.email + '\', \'banned\')">Banned</div>' +
+                            '<div class="role-option admin" onclick="event.stopPropagation(); changeUserRole(\'' + user.email + '\', \'admin\')">Admin</div>' +
+                            '<div class="role-option researcher" onclick="event.stopPropagation(); changeUserRole(\'' + user.email + '\', \'researcher\')">Researcher</div>' +
+                            '<div class="role-option view-only" onclick="event.stopPropagation(); changeUserRole(\'' + user.email + '\', \'view-only\')">View Only</div>' +
+                            '<div class="role-option banned" onclick="event.stopPropagation(); changeUserRole(\'' + user.email + '\', \'banned\')">Banned</div>' +
                         '</div></div>';
                 }
                 
-                return '<div class="' + cardClass + '">' +
+                return '<div class="' + cardClass + '" onclick="showUserDetail(\'' + user.email.replace(/'/g, "\\'") + '\')" style="cursor:pointer;">' +
                     '<div class="user-status-dot' + (isActive ? ' online' : '') + '"></div>' +
                     '<div class="user-info"><div class="user-email">' + user.email + '</div><div class="user-stats">' + user.count + ' generations</div></div>' +
-                    '<div class="' + activityClass + '">' + activityText + '</div>' +
+                    '<div class="' + activityClass + '" onclick="event.stopPropagation()">' + activityText + '</div>' +
                     dropdown +
                 '</div>';
             }).join('');
+        }
+
+        async function showUserDetail(email) {
+            var modal = document.getElementById('userDetailModal');
+            var body = document.getElementById('userDetailBody');
+            document.getElementById('userDetailTitle').textContent = email;
+            body.innerHTML = '<div class="empty-state">Loading user data...</div>';
+            modal.classList.add('active');
+            
+            try {
+                var userData = allUsers.find(function(u) { return u.email.toLowerCase() === email.toLowerCase(); }) || {};
+                var role = getUserRole(email);
+                var isActive = activeUsers.indexOf(email.toLowerCase()) !== -1;
+                
+                // Get all generations for this user
+                var generations = [];
+                if (supabaseClient) {
+                    var genResult = await supabaseClient.from('foia_requests').select('*').eq('user_email', email).order('created_at', { ascending: false });
+                    if (genResult.data) generations = genResult.data;
+                }
+                
+                // Get presence data
+                var lastSeen = null;
+                var totalSessions = 0;
+                try {
+                    var presenceResult = await supabaseClient.from('user_presence').select('*').eq('email', email.toLowerCase()).single();
+                    if (presenceResult.data) {
+                        lastSeen = presenceResult.data.last_seen;
+                    }
+                } catch(e) {}
+                
+                // Calculate stats
+                var firstGen = generations.length > 0 ? generations[generations.length - 1] : null;
+                var lastGen = generations.length > 0 ? generations[0] : null;
+                var statesUsed = [...new Set(generations.map(function(g) { return g.state; }).filter(Boolean))];
+                var suspectsSearched = [...new Set(generations.map(function(g) { return g.suspect_names; }).filter(Boolean))];
+                
+                // Calculate generations by time
+                var now = new Date();
+                var today = now.toISOString().split('T')[0];
+                var weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+                var monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+                var gensToday = generations.filter(function(g) { return g.created_at && g.created_at.startsWith(today); }).length;
+                var gensWeek = generations.filter(function(g) { return g.created_at >= weekAgo; }).length;
+                var gensMonth = generations.filter(function(g) { return g.created_at >= monthAgo; }).length;
+                
+                // Build HTML
+                var html = '';
+                
+                // Account Info Section
+                html += '<div class="user-detail-section">';
+                html += '<div class="user-detail-section-title">Account Information</div>';
+                html += '<div class="user-detail-grid">';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Email</div><div class="user-detail-value">' + email + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Role</div><div class="user-detail-value">' + getRoleLabel(role).toUpperCase() + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Status</div><div class="user-detail-value">' + (isActive ? '🟢 Active' : '⚫ Inactive') + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">User ID</div><div class="user-detail-value small">' + (userData.id || 'N/A') + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Last Seen</div><div class="user-detail-value">' + (lastSeen ? new Date(lastSeen).toLocaleString() : 'Never') + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">First Activity</div><div class="user-detail-value">' + (firstGen ? new Date(firstGen.created_at).toLocaleDateString() : 'N/A') + '</div></div>';
+                html += '</div></div>';
+                
+                // Activity Stats Section
+                html += '<div class="user-detail-section">';
+                html += '<div class="user-detail-section-title">Activity Statistics</div>';
+                html += '<div class="user-detail-grid">';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Total Generations</div><div class="user-detail-value">' + generations.length + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Today</div><div class="user-detail-value">' + gensToday + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">This Week</div><div class="user-detail-value">' + gensWeek + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">This Month</div><div class="user-detail-value">' + gensMonth + '</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">States Used</div><div class="user-detail-value">' + statesUsed.length + ' (' + (statesUsed.slice(0,5).join(', ') || 'None') + (statesUsed.length > 5 ? '...' : '') + ')</div></div>';
+                html += '<div class="user-detail-item"><div class="user-detail-label">Unique Suspects</div><div class="user-detail-value">' + suspectsSearched.length + '</div></div>';
+                html += '</div></div>';
+                
+                // Recent Generations Section
+                if (generations.length > 0) {
+                    html += '<div class="user-detail-section">';
+                    html += '<div class="user-detail-section-title">Recent Generations (' + Math.min(10, generations.length) + ' of ' + generations.length + ')</div>';
+                    html += '<div class="user-detail-generations">';
+                    generations.slice(0, 10).forEach(function(gen) {
+                        var date = new Date(gen.created_at).toLocaleString();
+                        html += '<div class="user-detail-gen-item">';
+                        html += '<div class="user-detail-gen-header"><span class="user-detail-gen-suspect">' + (gen.suspect_names || 'Unknown') + '</span><span class="user-detail-gen-date">' + date + '</span></div>';
+                        html += '<div class="user-detail-gen-meta">' + (gen.state || 'N/A') + ' • ' + (gen.subject_matter || 'N/A') + '</div>';
+                        html += '</div>';
+                    });
+                    html += '</div></div>';
+                }
+                
+                // Raw Data Section (for debugging/advanced info)
+                html += '<div class="user-detail-section">';
+                html += '<div class="user-detail-section-title">Technical Data</div>';
+                html += '<div class="user-detail-grid">';
+                html += '<div class="user-detail-item full-width"><div class="user-detail-label">Browser/Device Info</div><div class="user-detail-value small">' + navigator.userAgent + '</div></div>';
+                html += '</div></div>';
+                
+                body.innerHTML = html;
+                
+            } catch(e) {
+                body.innerHTML = '<div class="empty-state">Error loading user data</div>';
+                console.log(e);
+            }
         }
     </script>
 </body>
