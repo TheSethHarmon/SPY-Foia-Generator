@@ -123,6 +123,18 @@
             border-color: var(--text);
             box-shadow: 0 0 0 3px rgba(128,128,128,0.2);
         }
+        /* Date input styling */
+        input[type="date"] {
+            cursor: pointer;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+        }
+        [data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
         .btn {
             width: 100%;
             padding: 14px 28px;
@@ -1052,7 +1064,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="incidentDate">Date of Incident or Crime *</label>
-                                <input type="date" id="incidentDate" required>
+                                <input type="date" id="incidentDate" required onclick="this.showPicker()">
                                 <div class="error-msg" id="incidentDateError">Please select a date</div>
                             </div>
                             <div class="form-group">
@@ -1664,7 +1676,7 @@
             var state = document.getElementById('state').value;
             var suspect = document.getElementById('suspectNames').value;
             
-            document.getElementById('emailSubject').value = 'FOIA Request - ' + state + ' - ' + suspect;
+            document.getElementById('emailSubject').value = 'FOIA Request - ' + suspect;
             document.getElementById('emailBody').value = outputText;
             document.getElementById('threadSection').classList.remove('show');
             document.getElementById('threadId').value = '';
@@ -1682,24 +1694,49 @@
             if (e.target === this) hideEmailModal();
         });
         
-        document.getElementById('emailSend').addEventListener('click', function() {
+        document.getElementById('emailSend').addEventListener('click', async function() {
             var to = document.getElementById('emailTo').value;
             var subject = document.getElementById('emailSubject').value;
-            var body = document.getElementById('emailBody').value;
+            var outputEl = document.getElementById('outputText');
             
             if (!to) {
                 alert('Please enter a recipient email address');
                 return;
             }
             
-            // Use Gmail compose URL directly
+            // Copy formatted HTML to clipboard first
+            var html = '<div style="background-color:white;color:black;font-family:Arial,sans-serif;">' + outputEl.innerHTML + '</div>';
+            try {
+                await navigator.clipboard.write([new ClipboardItem({
+                    'text/html': new Blob([html], {type:'text/html'}),
+                    'text/plain': new Blob([outputEl.innerText], {type:'text/plain'})
+                })]);
+            } catch(e) {
+                // Fallback copy
+                var t = document.createElement('div'); 
+                t.innerHTML = html; 
+                t.style.cssText = 'position:absolute;left:-9999px';
+                document.body.appendChild(t); 
+                var r = document.createRange(); 
+                r.selectNodeContents(t);
+                var s = window.getSelection(); 
+                s.removeAllRanges(); 
+                s.addRange(r); 
+                document.execCommand('copy'); 
+                s.removeAllRanges(); 
+                document.body.removeChild(t);
+            }
+            
+            // Open Gmail compose (plain text body as fallback, user will paste formatted)
             var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1' +
                 '&to=' + encodeURIComponent(to) +
-                '&su=' + encodeURIComponent(subject) +
-                '&body=' + encodeURIComponent(body);
+                '&su=' + encodeURIComponent(subject);
             
             // Open Gmail compose in new tab
             window.open(gmailUrl, '_blank');
+            
+            // Show success message
+            alert('Formatted request copied to clipboard!\\n\\nGmail is opening - just press Ctrl+V (or Cmd+V) to paste your formatted request.');
             
             // Show thread ID section
             document.getElementById('threadSection').classList.add('show');
